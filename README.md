@@ -6,6 +6,9 @@
 
 一个基于AI的翻译对齐工具，使用Python和Tkinter构建的GUI应用程序，能够将中文文本翻译成英文并生成对齐的语料库。
 
+<img width="1204" height="1354" alt="image" src="https://github.com/user-attachments/assets/2b912507-17eb-4664-afd9-8f868c3c2f1f" />
+
+
 ### 功能特性
 
 - **智能段落分割**: 自动按空行分割文本段落。
