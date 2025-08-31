@@ -1,10 +1,8 @@
-# AI-Powered Translation Aligner (AI-PTA)
+# <a name="chinese-version"></a>AI-Powered Translation Aligner (AI-PTA)
 
 [English](#english-version)
 
 ---
-
-## <a name="chinese-version"></a>中文版 (默认)
 
 一个基于AI的翻译对齐工具，使用Python和Tkinter构建的GUI应用程序，能够将中文文本翻译成英文并生成对齐的语料库。
 
@@ -95,7 +93,7 @@ AI-PTA/
 
 ---
 
-## <a name="english-version"></a>English Version
+## <a name="english-version"></a>AI-Powered Translation Aligner (AI-PTA)
 
 An AI-based translation alignment tool. It's a GUI application built with Python and Tkinter that translates Chinese text into English and generates an aligned bilingual corpus.
 
