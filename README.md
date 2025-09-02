@@ -14,6 +14,8 @@ AI-Powered Translation Aligner (AI-PTA) 是一个基于人工智能的翻译对�
 - **上下文感知**: 支持设置上下文段落数，提高翻译准确性
 - **批量处理**: 支持多文件批量处理，自动生成翻译结果和Excel对齐文件
 
+<img width="1504" height="1099" alt="image" src="https://github.com/user-attachments/assets/b800bf8e-ba7b-46a4-8ab0-a387cbea3099" />
+
 ### 系统要求
 - Python 3.7+
 - Windows/Linux/macOS
