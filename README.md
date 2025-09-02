@@ -2,10 +2,10 @@
 
 [English Version](#english-version)
 
-## 中文版
-
 ### 项目简介
 AI-Powered Translation Aligner (AI-PTA) 是一个基于人工智能的翻译对齐工具，专门用于处理文本翻译和术语标注任务。该工具集成了多种AI API服务商，提供高效的翻译处理和术语管理功能。
+
+<img width="1204" height="1354" alt="image" src="https://github.com/user-attachments/assets/a02de8d7-3e89-42e3-93d2-c66a66001a0c" />
 
 ### 主要功能
 - **智能翻译处理**: 支持批量处理TXT文件，利用AI模型进行高质量翻译
@@ -50,8 +50,6 @@ AI-Powered Translation Aligner (AI-PTA) 是一个基于人工智能的翻译对�
 ---
 
 <a id="english-version"></a>
-## English Version
-
 ### Project Overview
 AI-Powered Translation Aligner (AI-PTA) is an AI-based translation alignment tool designed for text translation and terminology annotation tasks. The tool integrates multiple AI API providers, offering efficient translation processing and terminology management capabilities.
 
