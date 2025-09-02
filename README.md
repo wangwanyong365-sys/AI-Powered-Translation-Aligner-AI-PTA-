@@ -1,287 +1,143 @@
+<!--
+GitHub 语言切换功能
+使用 HTML 注释实现中英文切换
+-->
+
+<!-- en -->
 # AI-Powered Translation Aligner (AI-PTA) v0.7
 
-<div align="center">
-  <button onclick="switchLanguage('zh')" style="background: #0078D7; color: white; border: none; padding: 8px 16px; margin: 5px; border-radius: 4px; cursor: pointer;">中文</button>
-  <button onclick="switchLanguage('en')" style="background: #0078D7; color: white; border: none; padding: 8px 16px; margin: 5px; border-radius: 4px; cursor: pointer;">English</button>
-</div>
+A powerful desktop application for AI-assisted translation and terminology annotation with bilingual corpus generation capabilities.
 
-<img width="1204" height="1354" alt="image" src="https://github.com/user-attachments/assets/7089c0c9-0089-4376-b8e6-69d16365431c" />
+## Features
 
-<div id="zh-content" style="display: block;">
+- **AI-Powered Translation**: Integrates with multiple AI providers (DeepSeek, SiliconFlow, OpenAI) for high-quality translations
+- **Terminology Annotation**: Built-in terminology annotator for source text markup
+- **Bilingual Corpus Generation**: Automatically generates aligned bilingual Excel files
+- **Context-Aware Translation**: Supports context window settings for better translation quality
+- **Customizable Prompts**: Flexible prompt management system for different translation scenarios
+- **Batch Processing**: Process multiple text files simultaneously
+- **User-Friendly GUI**: Modern Tkinter-based interface with Chinese localization
 
+## Installation
 
-## 📖 项目简介
+1. **Install Python Dependencies**:
+   ```bash
+   pip install openai tiktoken pandas openpyxl
+   ```
 
-AI-PTA (AI-Powered Translation Aligner) 是一个基于人工智能的翻译对齐工具，专门用于处理文本翻译和对齐任务。该工具集成了术语标注、上下文感知翻译和语料库生成功能。
+2. **Run the Application**:
+   ```bash
+   python translator_app.py
+   ```
+   
+   Or use the provided batch files:
+   - `requirements.bat` - Install dependencies
+   - `run.bat` - Launch the application
 
-## ✨ 主要功能
+## Usage
 
-- **智能翻译**: 支持多种AI API提供商（DeepSeek、SiliconFlow、OpenAI）
-- **术语管理**: 内置术语标注器，支持术语的增删改查
-- **上下文感知**: 可配置上下文段落数，提高翻译准确性
-- **批量处理**: 支持多文件批量翻译处理
-- **语料库生成**: 自动生成Excel格式的双语对齐语料库
-- **Prompt管理**: 可自定义和保存翻译提示模板
+1. **Select Files**: Choose one or more TXT files for processing
+2. **Configure Settings**: Set API key, model, and translation parameters
+3. **Manage Terminology**: Use the built-in terminology annotator to create/edit term databases
+4. **Start Processing**: Click "Start Processing" to begin translation and corpus generation
+5. **Export Results**: Translated texts and bilingual Excel files are saved in separate folders
 
-## 🚀 快速开始
+## API Configuration
 
-### 环境要求
+- **Supported Providers**: DeepSeek, SiliconFlow, OpenAI
+- **API Key Management**: Save and manage multiple API keys with descriptive names
+- **Model Selection**: Choose from available models or add custom model names
 
-- Python 3.7+
-- Windows/Linux/macOS
+## Terminology Management
 
-### 安装依赖
+- **CSV Format**: Terminology databases are stored as CSV files in the `terminology/` folder
+- **Real-time Editing**: Add, modify, or delete terms during annotation
+- **Automatic Saving**: Changes are automatically saved to the terminology database
 
-```bash
-pip install -r requirements.txt
-```
+## Output Format
 
-或者直接运行：
+For each input file, the application creates:
+- `[filename]_translated.txt` - Full translated text
+- `[filename]_corpus.xlsx` - Bilingual aligned Excel corpus
 
-```bash
-requirements.bat
-```
+## License
 
-### 启动应用
+MIT License - See [LICENSE](LICENSE) file for details
 
-```bash
-python translator_app.py
-```
+## Author
 
-或者直接运行：
+Wanyong Wang  
+Department of Language Science and Technology (LST)  
+The Hong Kong Polytechnic University  
+Email: wangwanyong365@hotmail.com
 
-```bash
-run.bat
-```
+<!-- zh -->
+# AI 辅助翻译对齐工具 (AI-PTA) v0.7
 
-## 📁 项目结构
+一款功能强大的桌面应用程序，用于AI辅助翻译和术语标注，具备双语语料库生成能力。
 
-```
-AI-PTA/
-├── translator_app.py     # 主应用程序
-├── requirements.bat     # 依赖安装脚本
-├── run.bat             # 启动脚本
-├── terminology/         # 术语库目录
-│   └── test.csv        # 示例术语库
-├── settings.json       # 配置文件（自动生成）
-└── error_log.txt       # 错误日志（自动生成）
-```
+## 功能特点
 
-## ⚙️ 配置说明
+- **AI 辅助翻译**: 集成多个AI服务提供商（DeepSeek、SiliconFlow、OpenAI）进行高质量翻译
+- **术语标注**: 内置术语标注器，支持源文本标记
+- **双语语料库生成**: 自动生成对齐的双语Excel文件
+- **上下文感知翻译**: 支持上下文窗口设置，提高翻译质量
+- **可定制提示词**: 灵活的提示词管理系统，适应不同翻译场景
+- **批量处理**: 同时处理多个文本文件
+- **用户友好界面**: 基于Tkinter的现代化界面，支持中文本地化
 
-### API 设置
+## 安装
 
-1. 在设置界面选择API提供商
-2. 输入或选择API Key
-3. 配置模型名称（可选）
+1. **安装Python依赖**:
+   ```bash
+   pip install openai tiktoken pandas openpyxl
+   ```
 
-### 术语库管理
+2. **运行应用程序**:
+   ```bash
+   python translator_app.py
+   ```
+   
+   或使用提供的批处理文件：
+   - `requirements.bat` - 安装依赖
+   - `run.bat` - 启动应用程序
 
-1. 将CSV格式的术语库文件放入 `terminology/` 目录
-2. CSV格式：源术语,目标术语（每行一对）
-3. 支持在应用中动态管理术语
+## 使用方法
 
-### Prompt 模板
+1. **选择文件**: 选择一个或多个TXT文件进行处理
+2. **配置设置**: 设置API密钥、模型和翻译参数
+3. **管理术语**: 使用内置术语标注器创建/编辑术语数据库
+4. **开始处理**: 点击"开始处理"开始翻译和语料库生成
+5. **导出结果**: 翻译后的文本和双语Excel文件保存在单独的文件夹中
 
-- 使用 `{context}` 占位符插入上下文
-- 支持多个Prompt模板的保存和管理
+## API 配置
 
-## 🎯 使用指南
+- **支持的服务商**: DeepSeek、SiliconFlow、OpenAI
+- **API密钥管理**: 使用描述性名称保存和管理多个API密钥
+- **模型选择**: 从可用模型中选择或添加自定义模型名称
 
-1. **选择文件**: 点击"选择 TXT 文件"按钮添加待翻译文件
-2. **配置参数**: 设置Token数、上下文段落数等参数
-3. **选择术语库**: 从下拉菜单选择要使用的术语库
-4. **开始处理**: 点击"开始处理"按钮开始翻译
-5. **查看结果**: 翻译结果保存在原文件同名的子目录中
+## 术语管理
 
-## 🔧 工具菜单
+- **CSV格式**: 术语数据库以CSV文件格式存储在`terminology/`文件夹中
+- **实时编辑**: 在标注过程中添加、修改或删除术语
+- **自动保存**: 更改自动保存到术语数据库
 
-- **术语标注器**: 打开独立的术语管理工具
-- **帮助**: 查看关于信息和许可证
+## 输出格式
 
-## 📊 输出文件
+对于每个输入文件，应用程序会创建：
+- `[文件名]_translated.txt` - 完整翻译文本
+- `[文件名]_corpus.xlsx` - 双语对齐Excel语料库
 
-处理完成后，每个输入文件会生成：
+## 许可证
 
-- `[文件名]_translated.txt` - 翻译后的完整文本
-- `[文件名]_corpus.xlsx` - Excel格式的双语对齐语料库
+MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
 
-## 🛠️ 开发信息
+## 作者
 
-- **开发者**: 王万涌 (Wanyong Wang)
-- **机构**: 香港理工大学语言科学与技术系
-- **邮箱**: wangwanyong365@hotmail.com
-- **许可证**: MIT License
+王万涌  
+语言科学与技术系 (LST)  
+香港理工大学  
+邮箱: wangwanyong365@hotmail.com
 
-## 🤝 贡献
-
-欢迎提交Issue和Pull Request来改进这个项目。
-
-## 📄 许可证
-
-本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
-
-</div>
-
-<div id="en-content" style="display: none;">
-
-
-## 📖 Project Introduction
-
-AI-PTA (AI-Powered Translation Aligner) is an AI-based translation alignment tool specifically designed for text translation and alignment tasks. The tool integrates terminology annotation, context-aware translation, and corpus generation functionalities.
-
-## ✨ Key Features
-
-- **Smart Translation**: Supports multiple AI API providers (DeepSeek, SiliconFlow, OpenAI)
-- **Terminology Management**: Built-in terminology annotator with CRUD operations
-- **Context Awareness**: Configurable context paragraphs for improved translation accuracy
-- **Batch Processing**: Supports batch translation of multiple files
-- **Corpus Generation**: Automatically generates Excel-format bilingual aligned corpora
-- **Prompt Management**: Customizable and savable translation prompt templates
-
-## 🚀 Quick Start
-
-### Requirements
-
-- Python 3.7+
-- Windows/Linux/macOS
-
-### Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-Or run directly:
-
-```bash
-requirements.bat
-```
-
-### Launch Application
-
-```bash
-python translator_app.py
-```
-
-Or run directly:
-
-```bash
-run.bat
-```
-
-## 📁 Project Structure
-
-```
-AI-PTA/
-├── translator_app.py     # Main application
-├── requirements.bat      # Dependency installation script
-├── run.bat              # Launch script
-├── terminology/         # Terminology directory
-│   └── test.csv         # Example terminology database
-├── settings.json        # Configuration file (auto-generated)
-└── error_log.txt        # Error log (auto-generated)
-```
-
-## ⚙️ Configuration
-
-### API Settings
-
-1. Select API provider in settings interface
-2. Enter or select API Key
-3. Configure model name (optional)
-
-### Terminology Management
-
-1. Place CSV-format terminology files in `terminology/` directory
-2. CSV format: source term,target term (one pair per line)
-3. Supports dynamic terminology management within the application
-
-### Prompt Templates
-
-- Use `{context}` placeholder to insert context
-- Supports saving and managing multiple prompt templates
-
-## 🎯 Usage Guide
-
-1. **Select Files**: Click "Select TXT Files" button to add files for translation
-2. **Configure Parameters**: Set token count, context paragraphs, etc.
-3. **Choose Terminology**: Select terminology database from dropdown
-4. **Start Processing**: Click "Start Processing" button to begin translation
-5. **View Results**: Translation results are saved in subdirectories with original file names
-
-## 🔧 Tools Menu
-
-- **Terminology Annotator**: Open standalone terminology management tool
-- **Help**: View about information and license
-
-## 📊 Output Files
-
-After processing, each input file generates:
-
-- `[filename]_translated.txt` - Complete translated text
-- `[filename]_corpus.xlsx` - Excel-format bilingual aligned corpus
-
-## 🛠️ Development Information
-
-- **Developer**: Wanyong Wang
-- **Institution**: Department of Language Science and Technology, The Hong Kong Polytechnic University
-- **Email**: wangwanyong365@hotmail.com
-- **License**: MIT License
-
-## 🤝 Contributing
-
-Welcome to submit Issues and Pull Requests to improve this project.
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-</div>
-
-<script>
-function switchLanguage(lang) {
-    if (lang === 'zh') {
-        document.getElementById('zh-content').style.display = 'block';
-        document.getElementById('en-content').style.display = 'none';
-    } else if (lang === 'en') {
-        document.getElementById('zh-content').style.display = 'none';
-        document.getElementById('en-content').style.display = 'block';
-    }
-}
-</script>
-
-
-<style>
-body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    line-height: 1.6;
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-
-h1, h2, h3, h4 {
-    color: #333;
-    margin-top: 1.5em;
-}
-
-code {
-    background: #f4f4f4;
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-family: 'Consolas', 'Monaco', monospace;
-}
-
-pre code {
-    display: block;
-    padding: 10px;
-    border-radius: 5px;
-    overflow-x: auto;
-}
-
-button:hover {
-    opacity: 0.9;
-}
-</style>
+<!-- /zh -->
+<!-- /en -->
