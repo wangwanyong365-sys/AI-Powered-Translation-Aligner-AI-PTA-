@@ -5,7 +5,10 @@
   <button onclick="switchLanguage('en')" style="background: #0078D7; color: white; border: none; padding: 8px 16px; margin: 5px; border-radius: 4px; cursor: pointer;">English</button>
 </div>
 
+<img width="1204" height="1354" alt="image" src="https://github.com/user-attachments/assets/7089c0c9-0089-4376-b8e6-69d16365431c" />
+
 <div id="zh-content" style="display: block;">
+
 
 ## 📖 项目简介
 
@@ -34,6 +37,7 @@ pip install -r requirements.txt
 ```
 
 或者直接运行：
+
 ```bash
 requirements.bat
 ```
@@ -45,6 +49,7 @@ python translator_app.py
 ```
 
 或者直接运行：
+
 ```bash
 run.bat
 ```
@@ -97,6 +102,7 @@ AI-PTA/
 ## 📊 输出文件
 
 处理完成后，每个输入文件会生成：
+
 - `[文件名]_translated.txt` - 翻译后的完整文本
 - `[文件名]_corpus.xlsx` - Excel格式的双语对齐语料库
 
@@ -118,6 +124,7 @@ AI-PTA/
 </div>
 
 <div id="en-content" style="display: none;">
+
 
 ## 📖 Project Introduction
 
@@ -146,6 +153,7 @@ pip install -r requirements.txt
 ```
 
 Or run directly:
+
 ```bash
 requirements.bat
 ```
@@ -157,6 +165,7 @@ python translator_app.py
 ```
 
 Or run directly:
+
 ```bash
 run.bat
 ```
@@ -209,6 +218,7 @@ AI-PTA/
 ## 📊 Output Files
 
 After processing, each input file generates:
+
 - `[filename]_translated.txt` - Complete translated text
 - `[filename]_corpus.xlsx` - Excel-format bilingual aligned corpus
 
@@ -241,6 +251,7 @@ function switchLanguage(lang) {
 }
 </script>
 
+
 <style>
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -249,6 +260,7 @@ body {
     margin: 0 auto;
     padding: 20px;
 }
+
 
 h1, h2, h3, h4 {
     color: #333;
