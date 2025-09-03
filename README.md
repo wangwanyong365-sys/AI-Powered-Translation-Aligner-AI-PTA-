@@ -1,96 +1,135 @@
 # AI-Powered Translation Aligner (AI-PTA) v0.7
 
-[English Version](#english-version)
+A professional desktop application for AI-assisted translation and terminology management with parallel corpus generation capabilities.
 
-### 项目简介
-AI-Powered Translation Aligner (AI-PTA) 是一个基于人工智能的翻译对齐工具，专门用于处理文本翻译和术语标注任务。该工具集成了多种AI API服务商，提供高效的翻译处理和术语管理功能。
+## Features
 
-<img width="1204" height="1354" alt="image" src="https://github.com/user-attachments/assets/a02de8d7-3e89-42e3-93d2-c66a66001a0c" />
+- **AI-Powered Translation**: Uses OpenAI-compatible APIs (DeepSeek, SiliconFlow, OpenAI) for high-quality translations
+- **Terminology Management**: Built-in term annotator for managing translation glossaries
+- **Context-Aware Processing**: Maintains paragraph context for more accurate translations
+- **Batch Processing**: Process multiple text files simultaneously
+- **Parallel Corpus Generation**: Automatically creates Excel files with source-target alignment
+- **Customizable Prompts**: Flexible prompt system for different translation requirements
+- **API Key Management**: Secure storage and management of multiple API keys
 
-### 主要功能
-- **智能翻译处理**: 支持批量处理TXT文件，利用AI模型进行高质量翻译
-- **术语标注器**: 内置术语管理工具，支持术语的增删改查和自动标注
-- **多API支持**: 兼容DeepSeek、SiliconFlow、OpenAI等多种AI服务商
-- **上下文感知**: 支持设置上下文段落数，提高翻译准确性
-- **批量处理**: 支持多文件批量处理，自动生成翻译结果和Excel对齐文件
+## System Requirements
 
-<img width="1504" height="1099" alt="image" src="https://github.com/user-attachments/assets/b800bf8e-ba7b-46a4-8ab0-a387cbea3099" />
-
-### 系统要求
 - Python 3.7+
-- Windows/Linux/macOS
+- Windows (Recommended), macOS, or Linux
+- Internet connection for API access
 
-### 安装步骤
-1. 克隆或下载项目文件
-2. 运行 `requirements.bat` 安装依赖包
-3. 运行 `run.bat` 启动应用程序
+## Installation
 
-### 使用方法
-1. **选择文件**: 点击"选择TXT文件"按钮添加待翻译文件
-2. **配置参数**: 设置API密钥、模型名称、最大Token数等参数
-3. **管理术语**: 使用"术语标注器"工具管理翻译术语库
-4. **开始处理**: 点击"开始处理"按钮执行翻译任务
+1. **Install Python Dependencies**:
+   ```bash
+   pip install openai tiktoken pandas openpyxl
+   ```
 
-### 文件结构
+2. **Run the Application**:
+   ```bash
+   python translator_app.py
+   ```
+
+## Quick Start
+
+1. **Configure API Settings**:
+   - Select your preferred API provider (DeepSeek, SiliconFlow, or OpenAI)
+   - Enter your API key (or save it with a memorable name)
+   - Optional: Specify a custom model name
+
+2. **Set Up Terminology** (Optional):
+   - Use the "Term Annotator" tool from the Tools menu
+   - Create CSV files in the `terminology/` folder with source→target term pairs
+   - The application will automatically detect and load terminology files
+
+3. **Select Files**:
+   - Click "Select TXT Files..." to choose text files for translation
+   - Files should contain the source text you want to translate
+
+4. **Configure Translation Settings**:
+   - **Max Tokens**: Maximum tokens per API call (default: 8000)
+   - **Previous/Next Paragraphs**: Number of context paragraphs to include
+   - **Prompt**: Customize the translation instructions (use `{context}` placeholder)
+
+5. **Start Processing**:
+   - Click "Start Processing" to begin translation
+   - Each file will be processed and saved in its own subfolder
+   - Output includes translated text and Excel corpus files
+
+## File Structure
+
 ```
-项目根目录/
-├── translator_app.py    # 主应用程序
-├── requirements.bat     # 依赖安装脚本
-├── run.bat             # 启动脚本
-└── terminology/        # 术语库文件夹
-    └── test.csv        # 示例术语文件
-```
-
-### 技术支持
-- 开发者: 王万涌 (Wanyong Wang)
-- 机构: 香港理工大学语言科学与技术系
-- 邮箱: wangwanyong365@hotmail.com
-
-### 许可证
-本项目采用 MIT 许可证 - 详见[许可证文件](LICENSE)
-
----
-
-<a id="english-version"></a>
-### Project Overview
-AI-Powered Translation Aligner (AI-PTA) is an AI-based translation alignment tool designed for text translation and terminology annotation tasks. The tool integrates multiple AI API providers, offering efficient translation processing and terminology management capabilities.
-
-### Key Features
-- **Intelligent Translation Processing**: Batch processing of TXT files using AI models for high-quality translation
-- **Terminology Annotator**: Built-in terminology management tool supporting CRUD operations and automatic annotation
-- **Multi-API Support**: Compatible with DeepSeek, SiliconFlow, OpenAI, and other AI service providers
-- **Context Awareness**: Supports setting context paragraphs to improve translation accuracy
-- **Batch Processing**: Supports multi-file batch processing with automatic generation of translation results and Excel alignment files
-
-### System Requirements
-- Python 3.7+
-- Windows/Linux/macOS
-
-### Installation Steps
-1. Clone or download the project files
-2. Run `requirements.bat` to install dependencies
-3. Run `run.bat` to start the application
-
-### Usage Instructions
-1. **Select Files**: Click "Select TXT Files" button to add files for translation
-2. **Configure Parameters**: Set API key, model name, max tokens, and other parameters
-3. **Manage Terminology**: Use the "Terminology Annotator" tool to manage translation terminology
-4. **Start Processing**: Click "Start Processing" button to execute translation tasks
-
-### File Structure
-```
-Project Root/
-├── translator_app.py    # Main application
-├── requirements.bat     # Dependency installation script
-├── run.bat             # Startup script
-└── terminology/        # Terminology folder
-    └── test.csv        # Example terminology file
+project/
+├── translator_app.py     # Main application
+├── requirements.bat      # Dependency installation script
+├── run.bat              # Application launcher
+├── terminology/         # Terminology CSV files
+│   └── test.csv         # Example terminology file
+├── settings.json        # Application settings (auto-generated)
+└── error_log.txt        # Error logging (auto-generated)
 ```
 
-### Technical Support
-- Developer: Wanyong Wang
-- Institution: Department of Language Science and Technology, The Hong Kong Polytechnic University
-- Email: wangwanyong365@hotmail.com
+## Terminology Management
 
-### License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Create CSV files in the `terminology/` folder with the format:
+```csv
+source_term_1,target_term_1
+source_term_2,target_term_2
+```
+
+The term annotator tool allows you to:
+- Add, modify, and delete terms
+- Browse and select terminology files
+- Annotate source text with terminology tags
+
+## Output Format
+
+For each input file `example.txt`, the application creates:
+- `example/example_translated.txt` - Full translated text
+- `example/example_corpus.xlsx` - Excel file with aligned source-target paragraphs
+
+## Supported API Providers
+
+- **DeepSeek**: `https://api.deepseek.com`
+- **SiliconFlow**: `https://api.siliconflow.cn/v1`
+- **OpenAI**: `https://api.openai.com/v1`
+
+## Customization
+
+### Prompts
+Modify the translation prompt in the "Prompt Management" section. Use `{context}` as a placeholder for the text context, which includes:
+- Previous paragraphs (configurable)
+- Current paragraph to translate
+- Next paragraphs (configurable)
+
+### Settings
+Application settings are automatically saved in `settings.json` and include:
+- API keys (encrypted)
+- Model preferences
+- Custom prompts
+- Processing parameters
+
+## Troubleshooting
+
+### Common Issues
+1. **API Errors**: Check your API key and provider settings
+2. **File Encoding**: Ensure text files use UTF-8 encoding
+3. **Dependencies**: Run `requirements.bat` to install required packages
+
+### Error Logging
+Detailed error information is saved to `error_log.txt` for debugging.
+
+## License
+
+MIT License - See the application's "View License" option for details.
+
+## Authors
+
+- Wanyong Wang (wangwanyong365@hotmail.com)
+- Dechao Li (ctdechao@polyu.edu.hk)
+- Department of Language Science and Technology (LST)
+- The Hong Kong Polytechnic University
+
+## Version History
+
+- v0.7: Initial release with core translation and terminology features
