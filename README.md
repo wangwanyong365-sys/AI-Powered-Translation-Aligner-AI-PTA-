@@ -2,7 +2,7 @@
 
 A professional desktop application for AI-assisted translation and terminology management with parallel corpus generation capabilities.
 
-<img width="1204" height="1354" alt="image" src="https://github.com/user-attachments/assets/6fcd3035-df17-4653-bbc3-5271c11b8ae8" />
+<img width="1204" height="1354" alt="image" src="https://github.com/user-attachments/assets/dfb44c7d-6aa0-4849-a91a-f5b2b90e5e39" />
 
 ## Features
 
