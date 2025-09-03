@@ -4,8 +4,6 @@ A professional desktop application for AI-assisted translation and terminology m
 
 <img width="1204" height="1354" alt="image" src="https://github.com/user-attachments/assets/6fcd3035-df17-4653-bbc3-5271c11b8ae8" />
 
-<img width="1504" height="1099" alt="image" src="https://github.com/user-attachments/assets/6d64e013-384d-40ef-9dd0-71155ee1b623" />
-
 ## Features
 
 - **AI-Powered Translation**: Uses OpenAI-compatible APIs (DeepSeek, SiliconFlow, OpenAI) for high-quality translations
@@ -15,6 +13,8 @@ A professional desktop application for AI-assisted translation and terminology m
 - **Parallel Corpus Generation**: Automatically creates Excel files with source-target alignment
 - **Customizable Prompts**: Flexible prompt system for different translation requirements
 - **API Key Management**: Secure storage and management of multiple API keys
+
+<img width="1504" height="1099" alt="image" src="https://github.com/user-attachments/assets/6d64e013-384d-40ef-9dd0-71155ee1b623" />
 
 ## System Requirements
 
