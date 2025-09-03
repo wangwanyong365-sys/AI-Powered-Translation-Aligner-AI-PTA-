@@ -1,4 +1,4 @@
-# AI-Powered Translation Aligner (AI-PTA)
+# AI-Powered Translation Aligner (AI-PTA) v0.8
 
 A comprehensive desktop application for AI-assisted translation and terminology management with built-in annotation capabilities.
 
