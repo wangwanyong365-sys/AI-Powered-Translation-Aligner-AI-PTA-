@@ -2,7 +2,7 @@
 
 A comprehensive desktop application for AI-assisted translation and terminology management with built-in annotation capabilities.
 
-<img width="1202" height="1353" alt="image" src="https://github.com/user-attachments/assets/b65da4b7-8d06-4a22-a3aa-04e4a8a4eacd" />
+<img width="1202" height="1353" alt="image" src="https://github.com/user-attachments/assets/2fb130ed-047a-4a26-88f8-20ca6280d9cf" />
 
 ## Features
 
