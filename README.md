@@ -2,6 +2,8 @@
 
 A comprehensive desktop application for AI-assisted translation and terminology management with built-in annotation capabilities.
 
+<img width="1202" height="1353" alt="image" src="https://github.com/user-attachments/assets/b65da4b7-8d06-4a22-a3aa-04e4a8a4eacd" />
+
 ## Features
 
 - **AI-Powered Translation**: Uses OpenAI-compatible APIs (DeepSeek, SiliconFlow, OpenAI) for high-quality translations
@@ -10,6 +12,8 @@ A comprehensive desktop application for AI-assisted translation and terminology 
 - **Context-Aware Processing**: Maintains paragraph context for more accurate translations
 - **Batch Processing**: Process multiple text files simultaneously
 - **Export Capabilities**: Export translations as text files and Excel spreadsheets
+
+<img width="1502" height="1098" alt="image" src="https://github.com/user-attachments/assets/0c5c16d4-252c-4057-8c6c-6f96d0934a52" />
 
 ## System Requirements
 
