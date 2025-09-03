@@ -1,20 +1,15 @@
-# AI-Powered Translation Aligner (AI-PTA) v0.7
+# AI-Powered Translation Aligner (AI-PTA)
 
-A professional desktop application for AI-assisted translation and terminology management with parallel corpus generation capabilities.
-
-<img width="1204" height="1354" alt="image" src="https://github.com/user-attachments/assets/dfb44c7d-6aa0-4849-a91a-f5b2b90e5e39" />
+A comprehensive desktop application for AI-assisted translation and terminology management with built-in annotation capabilities.
 
 ## Features
 
 - **AI-Powered Translation**: Uses OpenAI-compatible APIs (DeepSeek, SiliconFlow, OpenAI) for high-quality translations
-- **Terminology Management**: Built-in term annotator for managing translation glossaries
+- **Terminology Management**: Create and manage custom terminology databases in CSV format
+- **Text Annotation**: Automatically annotate source text with terminology translations
 - **Context-Aware Processing**: Maintains paragraph context for more accurate translations
 - **Batch Processing**: Process multiple text files simultaneously
-- **Parallel Corpus Generation**: Automatically creates Excel files with source-target alignment
-- **Customizable Prompts**: Flexible prompt system for different translation requirements
-- **API Key Management**: Secure storage and management of multiple API keys
-
-<img width="1504" height="1099" alt="image" src="https://github.com/user-attachments/assets/6d64e013-384d-40ef-9dd0-71155ee1b623" />
+- **Export Capabilities**: Export translations as text files and Excel spreadsheets
 
 ## System Requirements
 
@@ -28,112 +23,114 @@ A professional desktop application for AI-assisted translation and terminology m
    ```bash
    pip install openai tiktoken pandas openpyxl
    ```
+   
+   Or run the included batch file:
+   ```
+   requirements.bat
+   ```
 
 2. **Run the Application**:
    ```bash
    python translator_app.py
    ```
+   
+   Or use the provided batch file:
+   ```
+   run.bat
+   ```
 
-## Quick Start
+## Getting Started
 
-1. **Configure API Settings**:
-   - Select your preferred API provider (DeepSeek, SiliconFlow, or OpenAI)
-   - Enter your API key (or save it with a memorable name)
-   - Optional: Specify a custom model name
+### 1. Configure API Settings
 
-2. **Set Up Terminology** (Optional):
-   - Use the "Term Annotator" tool from the Tools menu
-   - Create CSV files in the `terminology/` folder with source→target term pairs
-   - The application will automatically detect and load terminology files
+1. Open the application
+2. Go to Settings → API Provider and select your preferred service
+3. Enter your API key in the API Key field
+4. Select your preferred model (e.g., "deepseek-chat")
+5. Save your settings
 
-3. **Select Files**:
-   - Click "Select TXT Files..." to choose text files for translation
-   - Files should contain the source text you want to translate
+### 2. Set Up Terminology
 
-4. **Configure Translation Settings**:
-   - **Max Tokens**: Maximum tokens per API call (default: 8000)
-   - **Previous/Next Paragraphs**: Number of context paragraphs to include
-   - **Prompt**: Customize the translation instructions (use `{context}` placeholder)
+1. Create a `terminology` folder in the application directory
+2. Add CSV files with your terminology (format: `source_term,target_term`)
+3. Use the built-in Term Annotator tool (Tools → Term Annotator) to manage terminology
 
-5. **Start Processing**:
-   - Click "Start Processing" to begin translation
-   - Each file will be processed and saved in its own subfolder
-   - Output includes translated text and Excel corpus files
+### 3. Process Files
+
+1. Click "Select TXT Files" to choose your source text files
+2. Configure translation settings (max tokens, context paragraphs)
+3. Click "Start Processing" to begin translation
 
 ## File Structure
 
 ```
 project/
-├── translator_app.py     # Main application
-├── requirements.bat      # Dependency installation script
-├── run.bat              # Application launcher
-├── terminology/         # Terminology CSV files
-│   └── test.csv         # Example terminology file
-├── settings.json        # Application settings (auto-generated)
-└── error_log.txt        # Error logging (auto-generated)
+├── translator_app.py    # Main application
+├── requirements.bat     # Dependency installer
+├── run.bat             # Application launcher
+├── terminology/        # Terminology database folder
+│   └── *.csv           # CSV files with source→target terms
+├── settings.json       # Application settings (auto-generated)
+└── error_log.txt       # Error logging (auto-generated)
 ```
 
-## Terminology Management
+## Terminology Format
 
-Create CSV files in the `terminology/` folder with the format:
+Create CSV files in the `terminology` folder with the format:
 ```csv
 source_term_1,target_term_1
 source_term_2,target_term_2
+source_term_3,target_term_3
 ```
 
-The term annotator tool allows you to:
-- Add, modify, and delete terms
-- Browse and select terminology files
-- Annotate source text with terminology tags
+Example:
+```csv
+人类,Man
+存在,being
+技术,technology
+```
 
-## Output Format
+## Output Files
 
-For each input file `example.txt`, the application creates:
-- `example/example_translated.txt` - Full translated text
-- `example/example_corpus.xlsx` - Excel file with aligned source-target paragraphs
+For each processed text file, the application creates:
+- `[filename]_translated.txt` - Full translated text
+- `[filename]_corpus.xlsx` - Excel file with source and translation columns
 
 ## Supported API Providers
 
-- **DeepSeek**: `https://api.deepseek.com`
-- **SiliconFlow**: `https://api.siliconflow.cn/v1`
-- **OpenAI**: `https://api.openai.com/v1`
+- **DeepSeek**: https://api.deepseek.com
+- **SiliconFlow**: https://api.siliconflow.cn/v1  
+- **OpenAI**: https://api.openai.com/v1
 
-## Customization
+## Custom Prompts
 
-### Prompts
-Modify the translation prompt in the "Prompt Management" section. Use `{context}` as a placeholder for the text context, which includes:
-- Previous paragraphs (configurable)
-- Current paragraph to translate
-- Next paragraphs (configurable)
-
-### Settings
-Application settings are automatically saved in `settings.json` and include:
-- API keys (encrypted)
-- Model preferences
-- Custom prompts
-- Processing parameters
+The application supports custom translation prompts. Use `{context}` as a placeholder for the text to be translated and surrounding context.
 
 ## Troubleshooting
 
 ### Common Issues
-1. **API Errors**: Check your API key and provider settings
-2. **File Encoding**: Ensure text files use UTF-8 encoding
-3. **Dependencies**: Run `requirements.bat` to install required packages
+
+1. **API Connection Errors**: Check your API key and internet connection
+2. **File Not Found**: Ensure terminology CSV files are in the `terminology` folder
+3. **Memory Issues**: Reduce "Max Tokens" setting for large files
 
 ### Error Logging
-Detailed error information is saved to `error_log.txt` for debugging.
+
+Errors are automatically logged to `error_log.txt` for debugging purposes.
 
 ## License
 
-MIT License - See the application's "View License" option for details.
+MIT License - See included license information in the application.
 
 ## Authors
 
-- Wanyong Wang (wangwanyong365@hotmail.com)
-- Dechao Li (ctdechao@polyu.edu.hk)
-- Department of Language Science and Technology (LST)
-- The Hong Kong Polytechnic University
+- **Wanyong Wang** - wangwanyong365@hotmail.com
+- **Dechao Li** - ctdechao@polyu.edu.hk
 
-## Version History
+Department of Language Science and Technology (LST)  
+The Hong Kong Polytechnic University  
+Kowloon, Hong Kong, China
 
-- v0.7: Initial release with core translation and terminology features
+## Version
+
+v0.8 - Current stable release
