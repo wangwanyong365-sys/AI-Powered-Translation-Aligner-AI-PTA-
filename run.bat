@@ -1,1 +1,1 @@
-python translator_app.py
+python main.py

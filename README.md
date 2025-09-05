@@ -1,140 +1,92 @@
-# AI-Powered Translation Aligner (AI-PTA) v0.8
+# AI-Powered Translation Aligner (AI-PTA) v0.9
 
-A comprehensive desktop application for AI-assisted translation and terminology management with built-in annotation capabilities.
-
-<img width="1202" height="1353" alt="image" src="https://github.com/user-attachments/assets/2fb130ed-047a-4a26-88f8-20ca6280d9cf" />
+A comprehensive desktop application for AI-assisted translation and text processing with advanced post-editing capabilities.
 
 ## Features
 
-- **AI-Powered Translation**: Uses OpenAI-compatible APIs (DeepSeek, SiliconFlow, OpenAI) for high-quality translations
-- **Terminology Management**: Create and manage custom terminology databases in CSV format
-- **Text Annotation**: Automatically annotate source text with terminology translations
-- **Context-Aware Processing**: Maintains paragraph context for more accurate translations
-- **Batch Processing**: Process multiple text files simultaneously
-- **Export Capabilities**: Export translations as text files and Excel spreadsheets
+### Core Translation
+- **AI-Powered Translation**: Leverages OpenAI-compatible APIs (DeepSeek, SiliconFlow, OpenAI) for high-quality translations
+- **Context-Aware Processing**: Includes previous and next paragraphs for better contextual understanding
+- **Batch Processing**: Process multiple TXT files simultaneously with automatic folder organization
+- **Customizable Prompts**: Save and manage multiple translation prompts with {context} placeholder
+- **API Management**: Securely store and manage multiple API keys and providers
 
-<img width="1502" height="1098" alt="image" src="https://github.com/user-attachments/assets/0c5c16d4-252c-4057-8c6c-6f96d0934a52" />
+### Terminology Management
+- **Term Annotator Tool**: Interactive terminology annotation with source text highlighting
+- **CSV Terminology Support**: Import/export terminology lists in CSV format
+- **Real-time Annotation**: Automatically annotate source text with target terms
+- **Terminology Editor**: Add, modify, and delete terms with visual interface
 
-## System Requirements
-
-- Python 3.7+
-- Windows (Recommended), macOS, or Linux
-- Internet connection for API access
+### **Post-Editing Tool (NEW)**
+- **AI-Assisted Editing**: Polish and refine translated text using AI models
+- **Custom Editing Prompts**: Create and save specialized post-editing instructions
+- **Before/After Comparison**: Generate Excel files showing original vs. edited text
+- **Batch Processing**: Apply post-editing to entire documents paragraph by paragraph
+- **Flexible Placeholders**: Use {paragraph} placeholder for targeted editing
 
 ## Installation
 
-1. **Install Python Dependencies**:
+1. Install required dependencies:
    ```bash
    pip install openai tiktoken pandas openpyxl
    ```
-   
-   Or run the included batch file:
-   ```
-   requirements.bat
-   ```
 
-2. **Run the Application**:
+2. Run the application:
    ```bash
-   python translator_app.py
-   ```
-   
-   Or use the provided batch file:
-   ```
-   run.bat
+   python main.py
    ```
 
-## Getting Started
+## Usage
 
-### 1. Configure API Settings
+### Basic Translation
+1. Select TXT files using the file browser
+2. Configure API settings (provider, key, model)
+3. Choose or create a translation prompt
+4. Set context parameters (previous/next paragraphs)
+5. Click "Start Processing"
 
-1. Open the application
-2. Go to Settings → API Provider and select your preferred service
-3. Enter your API key in the API Key field
-4. Select your preferred model (e.g., "deepseek-chat")
-5. Save your settings
+### Terminology Annotation
+1. Access via Tools → Term Annotator
+2. Load terminology from CSV files in the `terminology/` folder
+3. Select source text file
+4. Click "Start Annotation" to apply terminology
 
-### 2. Set Up Terminology
-
-1. Create a `terminology` folder in the application directory
-2. Add CSV files with your terminology (format: `source_term,target_term`)
-3. Use the built-in Term Annotator tool (Tools → Term Annotator) to manage terminology
-
-### 3. Process Files
-
-1. Click "Select TXT Files" to choose your source text files
-2. Configure translation settings (max tokens, context paragraphs)
-3. Click "Start Processing" to begin translation
+### Post-Editing
+1. Access via Tools → Post-editing
+2. Select the text file to edit
+3. Choose or create a post-editing prompt
+4. Click "Start Post-editing" to process the document
 
 ## File Structure
 
-```
-project/
-├── translator_app.py    # Main application
-├── requirements.bat     # Dependency installer
-├── run.bat             # Application launcher
-├── terminology/        # Terminology database folder
-│   └── *.csv           # CSV files with source→target terms
-├── settings.json       # Application settings (auto-generated)
-└── error_log.txt       # Error logging (auto-generated)
-```
-
-## Terminology Format
-
-Create CSV files in the `terminology` folder with the format:
-```csv
-source_term_1,target_term_1
-source_term_2,target_term_2
-source_term_3,target_term_3
-```
-
-Example:
-```csv
-人类,Man
-存在,being
-技术,technology
-```
-
-## Output Files
-
-For each processed text file, the application creates:
-- `[filename]_translated.txt` - Full translated text
-- `[filename]_corpus.xlsx` - Excel file with source and translation columns
+- `main.py` - Main application window and translation processing
+- `app_utils.py` - Utility functions and settings management
+- `ui_tools.py` - Term annotator and post-editing tool implementations
+- `terminology/` - Folder for CSV terminology files
+- `settings.json` - Application settings (auto-generated)
+- `error_log.txt` - Error logging
 
 ## Supported API Providers
 
-- **DeepSeek**: https://api.deepseek.com
-- **SiliconFlow**: https://api.siliconflow.cn/v1  
-- **OpenAI**: https://api.openai.com/v1
+- DeepSeek (https://api.deepseek.com)
+- SiliconFlow (https://api.siliconflow.cn/v1) 
+- OpenAI (https://api.openai.com/v1)
+- Custom providers with OpenAI-compatible endpoints
 
-## Custom Prompts
+## Requirements
 
-The application supports custom translation prompts. Use `{context}` as a placeholder for the text to be translated and surrounding context.
-
-## Troubleshooting
-
-### Common Issues
-
-1. **API Connection Errors**: Check your API key and internet connection
-2. **File Not Found**: Ensure terminology CSV files are in the `terminology` folder
-3. **Memory Issues**: Reduce "Max Tokens" setting for large files
-
-### Error Logging
-
-Errors are automatically logged to `error_log.txt` for debugging purposes.
+- Python 3.7+
+- OpenAI Python library
+- Pandas for Excel export
+- Tkinter for GUI
 
 ## License
 
-MIT License - See included license information in the application.
+MIT License - See application Help → View License for details
 
 ## Authors
 
-- **Wanyong Wang** - wangwanyong365@hotmail.com
-- **Dechao Li** - ctdechao@polyu.edu.hk
-
-Department of Language Science and Technology (LST)  
-The Hong Kong Polytechnic University  
-Kowloon, Hong Kong, China
-
-## Version
-
-v0.8 - Current stable release
+- Wanyong Wang (wangwanyong365@hotmail.com)
+- Dechao Li (ctdechao@polyu.edu.hk)
+- Department of Language Science and Technology (LST)
+- The Hong Kong Polytechnic University
