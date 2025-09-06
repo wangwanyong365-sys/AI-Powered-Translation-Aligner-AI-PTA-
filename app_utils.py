@@ -32,6 +32,7 @@ def load_settings():
         "max_tokens": 8000,
         "context_before": 1,
         "context_after": 1,
+        "retry_attempts": 3,
         "api_providers": {
             "DeepSeek": {
                 "base_url": "https://api.deepseek.com",
@@ -118,14 +119,14 @@ def split_text_into_paragraphs(text):
     paragraphs = re.split(r'\n\s*\n', text)
     return [p.strip() for p in paragraphs if p.strip()]
 
-def translate_single_paragraph(client, model_name, full_prompt, max_tokens):
+def translate_single_paragraph(client, model_name, full_prompt, max_tokens, retry_attempts):
     last_exception = None
-    for attempt in range(10):
+    for attempt in range(retry_attempts):
         try:
             lines = full_prompt.split('\n', 1)
             system_message = lines[0]
             user_message = lines[1] if len(lines) > 1 else ""
-            
+
             response = client.chat.completions.create(
                 model=model_name,
                 messages=[
@@ -135,11 +136,12 @@ def translate_single_paragraph(client, model_name, full_prompt, max_tokens):
                 stream=False,
                 max_tokens=max_tokens
             )
-
+    
             if response.choices:
                 choice = response.choices[0]
                 if choice.finish_reason == 'content_filter':
-                    raise Exception("API call failed due to content filtering on the response.")
+                    log_error("API call failed due to content filtering on the response.")
+                    return "[ERROR_CONTENT_FILTER]"
                 
                 if choice.message and choice.message.content is not None:
                     return choice.message.content.strip()
@@ -147,15 +149,33 @@ def translate_single_paragraph(client, model_name, full_prompt, max_tokens):
                     raise Exception("API returned an empty message content.")
             else:
                 raise Exception("API response contained no choices.")
-
+    
+        except openai.APIConnectionError as e:
+            last_exception = e
+            error_message = f"API connection attempt {attempt + 1}/{retry_attempts} failed: {e}"
+            log_error(error_message)
         except Exception as e:
             last_exception = e
-            error_message = f"API call attempt {attempt + 1}/10 failed: {e}"
+            error_message = f"API call attempt {attempt + 1}/{retry_attempts} failed: {e}"
             log_error(error_message)
-            if attempt < 9:
-                time.sleep(2 ** attempt)  # Exponential backoff
+            if 'content_filter' in str(e).lower():
+                return "[ERROR_CONTENT_FILTER]"
     
-    return f"[Translation Failed: {str(last_exception)[:100]}...]"
+        if attempt < retry_attempts - 1:
+            time.sleep(2 ** attempt)
+    
+    if last_exception is None:
+        return "[ERROR_OTHER: Unknown error, no exception caught.]"
+    
+    if isinstance(last_exception, openai.APIConnectionError):
+        return "[ERROR_NETWORK]"
+    
+    error_str = str(last_exception)
+    if 'content_filter' in error_str.lower():
+        return "[ERROR_CONTENT_FILTER]"
+        
+    return f"[ERROR_OTHER: {error_str[:100]}...]"
+
 
 def test_api_connection(client, model_name):
     try:

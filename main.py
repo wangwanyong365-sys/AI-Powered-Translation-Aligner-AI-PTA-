@@ -7,6 +7,8 @@ from tkinter import ttk, filedialog, messagebox, simpledialog, scrolledtext
 
 import openai
 import pandas as pd
+from openpyxl import load_workbook
+from openpyxl.styles import Font
 
 from app_utils import load_settings, save_settings, log_error, split_text_into_paragraphs, translate_single_paragraph, test_api_connection
 from ui_tools import TermAnnotatorApp, PostEditingWindow
@@ -45,18 +47,17 @@ class TranslationApp(tk.Tk):
     def _setup_style(self):
         self.style = ttk.Style(self)
         self.style.theme_use("clam")
-        self.style.configure("Stop.TButton", font=("Segoe UI", 11), padding=(10, 5))
-        self.style.map("Stop.TButton", background=[("active", "#c42b1c"), ("!disabled", "#d13438")], foreground=[("!disabled", "white")])
+        self.style.configure("TButton", font=("Segoe UI", 10), padding=5)
         self.style.configure("TLabelFrame.Label", font=("Segoe UI", 11, "bold"))
     
     def _setup_ui(self):
-        self.title("AI-Powered Translation Aligner (AI-PTA) v0.13")
-        self.geometry("1000x700")
+        self.title("AI-Powered Translation Aligner (AI-PTA) v0.14")
+        self.geometry("1200x700")
         self.minsize(1000, 700)
     
         self.menu_bar = tk.Menu(self)
         self.config(menu=self.menu_bar)
-
+    
         settings_menu = tk.Menu(self.menu_bar, tearoff=0)
         self.menu_bar.add_cascade(label="Settings", menu=settings_menu)
         settings_menu.add_command(label="Translation Options...", command=self._open_translation_settings)
@@ -75,15 +76,15 @@ class TranslationApp(tk.Tk):
         main_frame.pack(expand=True, fill=tk.BOTH)
         main_frame.rowconfigure(0, weight=1)
         main_frame.columnconfigure(0, weight=1)
-
+    
         paned_window = ttk.PanedWindow(main_frame, orient=tk.HORIZONTAL)
         paned_window.grid(row=0, column=0, sticky="nsew")
-
+    
         left_pane = ttk.Frame(paned_window, padding=5)
         right_pane = ttk.Frame(paned_window, padding=5)
         paned_window.add(left_pane, weight=2)
         paned_window.add(right_pane, weight=1)
-
+    
         left_pane.rowconfigure(1, weight=1)
         left_pane.columnconfigure(0, weight=1)
         
@@ -97,7 +98,7 @@ class TranslationApp(tk.Tk):
         self.file_listbox.config(yscrollcommand=scrollbar.set)
         browse_button = ttk.Button(files_frame, text="Select TXT Files...", command=self._on_browse_files)
         browse_button.grid(row=1, column=0, columnspan=2, pady=(10, 0), sticky="e")
-
+    
         prompt_frame = ttk.LabelFrame(left_pane, text="Prompt Management", padding="10")
         prompt_frame.grid(row=1, column=0, sticky="nsew", pady=5)
         prompt_frame.columnconfigure(0, weight=1)
@@ -120,7 +121,7 @@ class TranslationApp(tk.Tk):
         prompt_scrollbar = ttk.Scrollbar(prompt_frame, orient=tk.VERTICAL, command=self.prompt_text.yview)
         prompt_scrollbar.grid(row=1, column=1, sticky="ns")
         self.prompt_text.config(yscrollcommand=prompt_scrollbar.set)
-
+    
         right_pane.rowconfigure(0, weight=0)
         right_pane.columnconfigure(0, weight=1)
         
@@ -174,7 +175,7 @@ class TranslationApp(tk.Tk):
         self.azure_settings_frame.columnconfigure(1, weight=1)
     
         self.process_button = ttk.Button(main_frame, text="Start Processing", command=self._start_processing)
-        self.process_button.grid(row=1, column=0, pady=10, ipady=5, sticky="ew")
+        self.process_button.grid(row=1, column=0, pady=10, sticky="ew")
         
         status_frame = ttk.Frame(self)
         status_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=5, pady=2)
@@ -183,21 +184,22 @@ class TranslationApp(tk.Tk):
         self.timer_label = ttk.Label(status_frame, text="", anchor=tk.E, width=10)
         self.timer_label.pack(side=tk.RIGHT)
         self._update_status("Ready", "gray")
-
+    
     def _open_translation_settings(self):
         dialog = tk.Toplevel(self)
         dialog.transient(self)
         dialog.title("Translation Options")
         dialog.grab_set()
         dialog.resizable(False, False)
-
+    
         content_frame = ttk.Frame(dialog, padding="15")
         content_frame.pack(expand=True, fill="both")
-
+    
         max_tokens = tk.IntVar(value=self.settings.get("max_tokens", 8000))
         context_before = tk.IntVar(value=self.settings.get("context_before", 1))
         context_after = tk.IntVar(value=self.settings.get("context_after", 1))
-
+        retry_attempts = tk.IntVar(value=self.settings.get("retry_attempts", 3))
+    
         ttk.Label(content_frame, text="Max Tokens:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
         ttk.Entry(content_frame, textvariable=max_tokens, width=15).grid(row=0, column=1, sticky="w", padx=5, pady=5)
         
@@ -206,18 +208,22 @@ class TranslationApp(tk.Tk):
         
         ttk.Label(content_frame, text="Next Paragraphs (Context):").grid(row=2, column=0, sticky="w", padx=5, pady=5)
         ttk.Entry(content_frame, textvariable=context_after, width=15).grid(row=2, column=1, sticky="w", padx=5, pady=5)
-
+        
+        ttk.Label(content_frame, text="Retry Attempts on Failure:").grid(row=3, column=0, sticky="w", padx=5, pady=5)
+        ttk.Entry(content_frame, textvariable=retry_attempts, width=15).grid(row=3, column=1, sticky="w", padx=5, pady=5)
+    
         def save_and_close():
             try:
                 self.settings['max_tokens'] = max_tokens.get()
                 self.settings['context_before'] = context_before.get()
                 self.settings['context_after'] = context_after.get()
+                self.settings['retry_attempts'] = retry_attempts.get()
                 save_settings(self.settings)
                 messagebox.showinfo("Success", "Settings saved.", parent=dialog)
                 dialog.destroy()
             except tk.TclError:
                 messagebox.showerror("Invalid Input", "Please ensure all values are valid integers.", parent=dialog)
-
+    
         button_frame = ttk.Frame(dialog, padding="10")
         button_frame.pack(fill="x")
         ttk.Button(button_frame, text="Save", command=save_and_close).pack(side="right", padx=5)
@@ -608,7 +614,7 @@ SOFTWARE."""
     
         self.is_processing = True
         self.stop_requested.clear()
-        self.process_button.config(text="Stop Processing", command=self._stop_processing, style="Stop.TButton")
+        self.process_button.config(text="Stop Processing", command=self._stop_processing)
         self._update_status("Processing, please wait...", "orange")
     
         threading.Thread(target=self._processing_task, args=(self.resume_data,), daemon=True).start()
@@ -626,6 +632,7 @@ SOFTWARE."""
             context_before = self.settings.get('context_before', 1)
             context_after = self.settings.get('context_after', 1)
             max_tokens_value = self.settings.get('max_tokens', 8000)
+            retry_attempts_value = self.settings.get('retry_attempts', 3)
     
             client = self._create_client()
     
@@ -682,7 +689,7 @@ SOFTWARE."""
                     if j + 1 < end: context_parts.extend(["\n[Next Context]"] + paragraphs[j+1:end])
     
                     full_prompt = user_prompt_template.format(context="\n".join(context_parts))
-                    translated_para = translate_single_paragraph(client, model_name, full_prompt, max_tokens_value)
+                    translated_para = translate_single_paragraph(client, model_name, full_prompt, max_tokens_value, retry_attempts_value)
                     
                     self.after(0, self._cancel_timer)
                     translated_paragraphs.append(translated_para)
@@ -693,7 +700,25 @@ SOFTWARE."""
     
                 self.after(0, self._update_status, f"[{i+1}/{total_files}] Generating Excel file...", "orange")
                 df = pd.DataFrame({'Source': paragraphs, 'Translation': translated_paragraphs})
-                df.to_excel(os.path.join(output_dir, f"{dir_name}_corpus.xlsx"), index=False, engine='openpyxl')
+                excel_path = os.path.join(output_dir, f"{dir_name}_corpus.xlsx")
+                df.to_excel(excel_path, index=False, engine='openpyxl')
+                
+                red_bold_font = Font(color="FF0000", bold=True)
+                wb = load_workbook(excel_path)
+                ws = wb.active
+                for row in ws.iter_rows(min_row=2, max_col=ws.max_column, max_row=ws.max_row):
+                    cell = row[1]
+                    if not isinstance(cell.value, str): continue
+                    if cell.value == "[ERROR_CONTENT_FILTER]":
+                        cell.value = "Rejected by API (content policy)"
+                        cell.font = red_bold_font
+                    elif cell.value == "[ERROR_NETWORK]":
+                        cell.value = "Network Issue"
+                        cell.font = red_bold_font
+                    elif cell.value.startswith("[ERROR_OTHER:"):
+                        cell.value = f"Failed: {cell.value[13:-3]}"
+                        cell.font = red_bold_font
+                wb.save(excel_path)
     
             if os.path.exists(RESUME_FILE):
                 os.remove(RESUME_FILE)
@@ -710,7 +735,7 @@ SOFTWARE."""
         
         finally:
             self.is_processing = False
-            self.after(0, lambda: self.process_button.config(text="Start Processing", command=self._start_processing, style="TButton"))
+            self.after(0, lambda: self.process_button.config(text="Start Processing", command=self._start_processing))
             self.after(0, self._cancel_timer)
 
 if __name__ == "__main__":

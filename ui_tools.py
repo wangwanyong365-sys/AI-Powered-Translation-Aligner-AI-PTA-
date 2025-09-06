@@ -8,6 +8,8 @@ from tkinter import ttk, filedialog, messagebox, simpledialog
 
 import openai
 import pandas as pd
+from openpyxl import load_workbook
+from openpyxl.styles import Font
 
 from app_utils import log_error, save_settings, split_text_into_paragraphs, translate_single_paragraph
 
@@ -134,7 +136,7 @@ class TermAnnotatorApp:
         self.annotate_button = ttk.Button(
             bottom_frame, text="Start Annotation", command=self._start_annotation
         )
-        self.annotate_button.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E), ipady=5)
+        self.annotate_button.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E))
     
         self.status_label = ttk.Label(
             main_frame, text="Ready", anchor=tk.W, style="Ready.Status.TLabel"
@@ -510,7 +512,7 @@ class PostEditingWindow(tk.Toplevel):
         self.prompt_text.config(yscrollcommand=prompt_scrollbar.set)
     
         self.process_button = ttk.Button(main_frame, text="Start Post-editing", command=self._start_post_editing)
-        self.process_button.grid(row=2, column=0, pady=10, ipady=5, sticky="ew")
+        self.process_button.grid(row=2, column=0, pady=10, sticky="ew")
     
         status_frame = ttk.Frame(self)
         status_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=5, pady=2)
@@ -634,7 +636,7 @@ class PostEditingWindow(tk.Toplevel):
     
         self.is_processing = True
         self.stop_requested.clear()
-        self.process_button.config(text="Stop Processing", command=self._stop_post_editing, style="Stop.TButton")
+        self.process_button.config(text="Stop Processing", command=self._stop_post_editing)
         self._update_status("Processing...", "orange")
     
         threading.Thread(target=self._post_editing_task, args=(self.resume_data,), daemon=True).start()
@@ -649,6 +651,7 @@ class PostEditingWindow(tk.Toplevel):
         try:
             model_name = self.parent.model_name_var.get().strip()
             max_tokens = self.parent.settings.get('max_tokens', 8000)
+            retry_attempts = self.parent.settings.get('retry_attempts', 3)
             prompt_template = self.prompt_text.get("1.0", tk.END).strip()
             
             client = self.parent._create_client()
@@ -681,7 +684,7 @@ class PostEditingWindow(tk.Toplevel):
                 source_text, target_text = str(row['Source']), str(row['Translation'])
                 full_prompt = prompt_template.format(source=source_text, target=target_text)
                 
-                edited_para = translate_single_paragraph(client, model_name, full_prompt, max_tokens)
+                edited_para = translate_single_paragraph(client, model_name, full_prompt, max_tokens, retry_attempts)
                 
                 self.after(0, self._cancel_timer)
                 edited_paragraphs.append(edited_para)
@@ -695,6 +698,30 @@ class PostEditingWindow(tk.Toplevel):
     
             excel_path = os.path.join(output_dir, f"{base_name}_postedited.xlsx")
             output_df.to_excel(excel_path, index=False, engine='openpyxl')
+            
+            red_bold_font = Font(color="FF0000", bold=True)
+            wb = load_workbook(excel_path)
+            ws = wb.active
+            post_edited_col_idx = -1
+            for col_idx, cell in enumerate(ws[1]):
+                if cell.value == 'Post-edited':
+                    post_edited_col_idx = col_idx
+                    break
+            
+            if post_edited_col_idx != -1:
+                for row in ws.iter_rows(min_row=2, max_row=ws.max_row):
+                    cell = row[post_edited_col_idx]
+                    if not isinstance(cell.value, str): continue
+                    if cell.value == "[ERROR_CONTENT_FILTER]":
+                        cell.value = "Rejected by API (content policy)"
+                        cell.font = red_bold_font
+                    elif cell.value == "[ERROR_NETWORK]":
+                        cell.value = "Network Issue"
+                        cell.font = red_bold_font
+                    elif cell.value.startswith("[ERROR_OTHER:"):
+                        cell.value = f"Failed: {cell.value[13:-3]}"
+                        cell.font = red_bold_font
+            wb.save(excel_path)
             
             full_edited_text = "\n\n".join(output_df['Post-edited'].astype(str).tolist())
             txt_path = os.path.join(output_dir, f"{base_name}_postedited.txt")
@@ -711,5 +738,5 @@ class PostEditingWindow(tk.Toplevel):
         
         finally:
             self.is_processing = False
-            self.after(0, lambda: self.process_button.config(text="Start Post-editing", command=self._start_post_editing, style="TButton"))
+            self.after(0, lambda: self.process_button.config(text="Start Post-editing", command=self._start_post_editing))
             self.after(0, self._cancel_timer)
