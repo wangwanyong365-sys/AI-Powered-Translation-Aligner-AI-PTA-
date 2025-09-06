@@ -1,4 +1,4 @@
-# AI-Powered Translation Aligner (AI-PTA) v0.13
+# AI-Powered Translation Aligner (AI-PTA) v0.14
 
 A comprehensive desktop application for AI-assisted translation and text processing with advanced post-editing capabilities.
 
@@ -17,16 +17,12 @@ A comprehensive desktop application for AI-assisted translation and text process
 - **Real-time Annotation**: Automatically annotate source text with target terms
 - **Terminology Editor**: Add, modify, and delete terms with visual interface
 
-<img width="1502" height="1098" alt="image" src="https://github.com/user-attachments/assets/e8b708fe-226e-4a56-a2d0-26e9326a2707" />
-
 ### **Post-Editing Tool**
 - **AI-Assisted Editing**: Polish and refine translated text using AI models
 - **Custom Editing Prompts**: Create and save specialized post-editing instructions
 - **Before/After Comparison**: Generate Excel files showing original vs. edited text
 - **Batch Processing**: Apply post-editing to entire documents paragraph by paragraph
 - **Flexible Placeholders**: Use {paragraph} placeholder for targeted editing
-
-<img width="1052" height="948" alt="image" src="https://github.com/user-attachments/assets/f016990f-22e5-44da-9c17-0ac43a39ec15" />
 
 ## Installation
 
