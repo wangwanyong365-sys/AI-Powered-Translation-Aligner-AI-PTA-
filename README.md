@@ -2,7 +2,7 @@
 
 A comprehensive desktop application for AI-assisted translation and text processing with advanced post-editing capabilities.
 
-<img width="1202" height="1353" alt="image" src="https://github.com/user-attachments/assets/6d610d35-4174-4c3d-a5af-f015c462cac5" />
+<img width="1202" height="1353" alt="image" src="https://github.com/user-attachments/assets/e4d65b8b-b27f-499e-91b8-879358d7197e" />
 
 ## Features
 
@@ -19,16 +19,16 @@ A comprehensive desktop application for AI-assisted translation and text process
 - **Real-time Annotation**: Automatically annotate source text with target terms
 - **Terminology Editor**: Add, modify, and delete terms with visual interface
 
-<img width="1502" height="1098" alt="image" src="https://github.com/user-attachments/assets/85547727-5337-460a-9a5b-17fa08c5502c" />
+<img width="1502" height="1098" alt="image" src="https://github.com/user-attachments/assets/e8b708fe-226e-4a56-a2d0-26e9326a2707" />
 
-### **Post-Editing Tool (NEW)**
+### **Post-Editing Tool**
 - **AI-Assisted Editing**: Polish and refine translated text using AI models
 - **Custom Editing Prompts**: Create and save specialized post-editing instructions
 - **Before/After Comparison**: Generate Excel files showing original vs. edited text
 - **Batch Processing**: Apply post-editing to entire documents paragraph by paragraph
 - **Flexible Placeholders**: Use {paragraph} placeholder for targeted editing
 
-<img width="1052" height="948" alt="image" src="https://github.com/user-attachments/assets/561f065e-9af5-4a15-97c6-b0d86b95b6af" />
+<img width="1052" height="948" alt="image" src="https://github.com/user-attachments/assets/f016990f-22e5-44da-9c17-0ac43a39ec15" />
 
 ## Installation
 
