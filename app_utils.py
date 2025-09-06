@@ -92,6 +92,7 @@ def translate_single_paragraph(client, model_name, full_prompt, max_tokens):
         system_message = lines[0]
         user_message = lines[1] if len(lines) > 1 else ""
         
+
         response = client.chat.completions.create(
             model=model_name,
             messages=[
@@ -106,3 +107,17 @@ def translate_single_paragraph(client, model_name, full_prompt, max_tokens):
         error_message = f"API call failed: {e}"
         log_error(error_message)
         return f"[Translation Failed: {str(e)[:50]}...]"
+
+def test_api_connection(client, model_name):
+    try:
+        response = client.chat.completions.create(
+            model=model_name,
+            messages=[
+                {"role": "user", "content": "Hello"},
+            ],
+            stream=False,
+            max_tokens=5
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        raise e

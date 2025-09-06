@@ -8,7 +8,7 @@ from tkinter import ttk, filedialog, messagebox, simpledialog, scrolledtext
 import openai
 import pandas as pd
 
-from app_utils import load_settings, save_settings, log_error, split_text_into_paragraphs, translate_single_paragraph
+from app_utils import load_settings, save_settings, log_error, split_text_into_paragraphs, translate_single_paragraph, test_api_connection
 from ui_tools import TermAnnotatorApp, PostEditingWindow
 
 RESUME_FILE = "resume_info.json"
@@ -21,6 +21,7 @@ class TranslationApp(tk.Tk):
         self.annotator_window = None
         self.post_editor_window = None
         
+
         self.stop_requested = threading.Event()
         self.is_processing = False
         self.resume_data = None
@@ -32,7 +33,7 @@ class TranslationApp(tk.Tk):
         
         self.protocol("WM_DELETE_WINDOW", self._on_closing)
         self.after(100, self._check_for_resume_task)
-
+    
     def _on_closing(self):
         if self.is_processing:
             if not messagebox.askyesno("Confirm Exit", "A translation task is currently in progress. Exiting now will stop it. Are you sure you want to exit?"):
@@ -55,7 +56,7 @@ class TranslationApp(tk.Tk):
         self.style.configure("TLabelFrame.Label", font=("Segoe UI", 11, "bold"))
     
     def _setup_ui(self):
-        self.title("AI-Powered Translation Aligner (AI-PTA) v0.10")
+        self.title("AI-Powered Translation Aligner (AI-PTA) v0.11")
         self.geometry("800x850") 
         self.minsize(600, 700)
     
@@ -143,6 +144,8 @@ class TranslationApp(tk.Tk):
         model_btn_frame.grid(row=0, column=1, padx=(5,0))
         ttk.Button(model_btn_frame, text="Save", command=self._save_model_name, width=6).pack(side=tk.LEFT, padx=2)
         ttk.Button(model_btn_frame, text="Delete", command=self._delete_model_name, width=6).pack(side=tk.LEFT, padx=2)
+        self.test_api_button = ttk.Button(model_btn_frame, text="Test", command=self._test_api_connection, width=6)
+        self.test_api_button.pack(side=tk.LEFT, padx=2)
     
         prompt_frame = ttk.LabelFrame(main_frame, text="Prompt Management", padding="10")
         prompt_frame.grid(row=2, column=0, sticky="nsew", pady=5)
@@ -177,7 +180,7 @@ class TranslationApp(tk.Tk):
         self.timer_label = ttk.Label(status_frame, text="", anchor=tk.E, width=10)
         self.timer_label.pack(side=tk.RIGHT)
         self._update_status("Ready", "gray")
-
+    
     def _open_annotator(self):
         if self.annotator_window and self.annotator_window.winfo_exists():
             self.annotator_window.lift()
@@ -319,6 +322,39 @@ SOFTWARE."""
             save_settings(self.settings)
             self._update_model_name_combo()
             self.model_name_var.set("")
+    
+    def _test_api_connection(self):
+        api_key = self._get_current_api_key()
+        model_name = self.model_name_var.get().strip()
+        provider_name = self.api_provider_var.get()
+        base_url = self.settings['api_providers'].get(provider_name)
+
+        if not api_key:
+            messagebox.showerror("Error", "API Key is required for the test.", parent=self)
+            return
+        if not model_name:
+            messagebox.showerror("Error", "Model Name is required for the test.", parent=self)
+            return
+        if not base_url:
+            messagebox.showerror("Error", f"Could not find URL for provider '{provider_name}'.", parent=self)
+            return
+
+        self.test_api_button.config(state=tk.DISABLED)
+        messagebox.showinfo("Testing", "Sending a test request... Please wait.", parent=self)
+
+        threading.Thread(target=self._test_api_thread_task, args=(api_key, base_url, model_name), daemon=True).start()
+
+    def _test_api_thread_task(self, api_key, base_url, model_name):
+        try:
+            client = openai.OpenAI(api_key=api_key, base_url=base_url)
+            response_content = test_api_connection(client, model_name)
+            self.after(0, lambda: messagebox.showinfo("Success", f"Connection successful!\n\nModel response: '{response_content}'", parent=self))
+        except Exception as e:
+            error_message = f"API Test Failed: {e}"
+            log_error(error_message)
+            self.after(0, lambda: messagebox.showerror("Connection Failed", str(e), parent=self))
+        finally:
+            self.after(0, lambda: self.test_api_button.config(state=tk.NORMAL))
             
     def _update_api_provider_combo(self):
         self.api_provider_combo['values'] = list(self.settings.get('api_providers', {}).keys())
@@ -422,13 +458,13 @@ SOFTWARE."""
         mins, secs = divmod(elapsed, 60)
         self.timer_label.config(text=f"{int(mins):02d}:{secs:04.1f}")
         self.timer_id = self.after(100, self._update_timer, start_time)
-
+    
     def _cancel_timer(self):
         if self.timer_id:
             self.after_cancel(self.timer_id)
             self.timer_id = None
         self.timer_label.config(text="")
-
+    
     def _check_for_resume_task(self):
         if os.path.exists(RESUME_FILE):
             try:
@@ -446,7 +482,7 @@ SOFTWARE."""
             except Exception as e:
                 log_error(f"Failed to read resume file: {e}")
                 os.remove(RESUME_FILE)
-
+    
     def _load_resume_state(self, data):
         self.resume_data = data
         self.selected_files = data.get('all_files', [])
@@ -456,7 +492,7 @@ SOFTWARE."""
         
         self._update_status(f"Ready to resume. {len(self.selected_files)} files loaded.", "blue")
         messagebox.showinfo("Resume Ready", "The previous task has been loaded. Click 'Start Processing' to continue.")
-
+    
     def _save_resume_state(self, current_file, last_index, translated_paras, all_files):
         state = {
             'current_file': current_file,
@@ -482,12 +518,12 @@ SOFTWARE."""
     
         threading.Thread(target=self._processing_task, args=(self.resume_data,), daemon=True).start()
         self.resume_data = None
-
+    
     def _stop_processing(self):
         self.stop_requested.set()
         self._cancel_timer()
         self._update_status("Stopping...", "orange")
-
+    
     def _processing_task(self, resume_data=None):
         try:
             provider_name = self.api_provider_var.get()
@@ -511,7 +547,7 @@ SOFTWARE."""
                     start_file_index = self.selected_files.index(resume_data.get('current_file'))
                 except ValueError:
                     log_error(f"Resumed file '{resume_data.get('current_file')}' not found in selection.")
-
+    
             for i in range(start_file_index, total_files):
                 file_path = self.selected_files[i]
                 file_name = os.path.basename(file_path)
@@ -530,7 +566,7 @@ SOFTWARE."""
     
                 translated_paragraphs, total_paragraphs = [], len(paragraphs)
                 start_paragraph_index = 0
-
+    
                 if resume_data and file_path == resume_data.get('current_file'):
                     start_paragraph_index = resume_data.get('last_paragraph_index', -1) + 1
                     translated_paragraphs = resume_data.get('translated_paragraphs', [])
@@ -541,12 +577,12 @@ SOFTWARE."""
                         self._save_resume_state(file_path, j - 1, translated_paragraphs, self.selected_files)
                         self.after(0, self._update_status, f"Processing stopped. Progress for '{file_name}' saved.", "blue")
                         return
-
+    
                     self.after(0, self._update_status, f"[{i+1}/{total_files}] Translating {file_name} paragraph ({j+1}/{total_paragraphs})", "orange")
                     
                     start_time = time.time()
                     self.after(0, self._update_timer, start_time)
-
+    
                     context_parts = []
                     start = max(0, j - context_before)
                     if start < j: context_parts.extend(["[Previous Context]"] + paragraphs[start:j] + [""])
@@ -572,7 +608,7 @@ SOFTWARE."""
     
             if os.path.exists(RESUME_FILE):
                 os.remove(RESUME_FILE)
-
+    
             self.settings['max_tokens'] = self.max_tokens_var.get()
             self.settings['context_before'] = self.context_before_var.get()
             self.settings['context_after'] = self.context_after_var.get()
