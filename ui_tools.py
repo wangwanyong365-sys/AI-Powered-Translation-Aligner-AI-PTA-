@@ -53,7 +53,7 @@ class TermEditDialog(tk.Toplevel):
     def _create_buttons(self):
         button_frame = ttk.Frame(self)
         
-        ok_button = ttk.Button(button_frame, text="OK", command=self._ok, style="Accent.TButton")
+        ok_button = ttk.Button(button_frame, text="OK", command=self._ok)
         ok_button.pack(side="left", padx=5, pady=5)
         
         cancel_button = ttk.Button(button_frame, text="Cancel", command=self._cancel)
@@ -108,8 +108,6 @@ class TermAnnotatorApp:
         self.style.configure("TCombobox", font=self.default_font)
         self.style.configure("TLabelframe", font=self.default_font, padding=10)
         self.style.configure("TLabelframe.Label", font=self.title_font, foreground="#333")
-        self.style.configure("Accent.TButton", font=self.accent_font, padding=(10, 8))
-        self.style.map("Accent.TButton", background=[("active", "#005a9e"), ("pressed", "#004578"), ("disabled", "#a0a0a0")])
         self.style.configure("Status.TLabel", font=self.status_font, padding=5)
         self.style.configure("Ready.Status.TLabel", foreground="gray")
         self.style.configure("Info.Status.TLabel", foreground="blue")
@@ -134,7 +132,7 @@ class TermAnnotatorApp:
         bottom_frame.columnconfigure(0, weight=1)
     
         self.annotate_button = ttk.Button(
-            bottom_frame, text="Start Annotation", style="Accent.TButton", command=self._start_annotation
+            bottom_frame, text="Start Annotation", command=self._start_annotation
         )
         self.annotate_button.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E), ipady=5)
     
@@ -461,14 +459,14 @@ class PostEditingWindow(tk.Toplevel):
         self.transient(parent)
         self.grab_set()
         self.after(100, self._check_for_resume_task)
-
+    
     def _on_closing(self):
         if self.is_processing:
             if not messagebox.askyesno("Confirm Exit", "A post-editing task is in progress. Exiting now will stop it. Are you sure?", parent=self):
                 return
             self.stop_requested.set()
         self.destroy()
-
+    
     def _setup_ui(self):
         main_frame = ttk.Frame(self, padding="10")
         main_frame.pack(expand=True, fill=tk.BOTH)
@@ -511,7 +509,7 @@ class PostEditingWindow(tk.Toplevel):
         prompt_scrollbar.grid(row=1, column=1, sticky="ns")
         self.prompt_text.config(yscrollcommand=prompt_scrollbar.set)
     
-        self.process_button = ttk.Button(main_frame, text="Start Post-editing", style="Accent.TButton", command=self._start_post_editing)
+        self.process_button = ttk.Button(main_frame, text="Start Post-editing", command=self._start_post_editing)
         self.process_button.grid(row=2, column=0, pady=10, ipady=5, sticky="ew")
     
         status_frame = ttk.Frame(self)
@@ -542,13 +540,13 @@ class PostEditingWindow(tk.Toplevel):
     def _update_status(self, text, color):
         self.status_label.config(text=text, foreground=color)
         self.update_idletasks()
-
+    
     def _update_timer(self, start_time):
         elapsed = time.time() - start_time
         mins, secs = divmod(elapsed, 60)
         self.timer_label.config(text=f"{int(mins):02d}:{secs:04.1f}")
         self.timer_id = self.after(100, self._update_timer, start_time)
-
+    
     def _cancel_timer(self):
         if self.timer_id:
             self.after_cancel(self.timer_id)
@@ -600,7 +598,7 @@ class PostEditingWindow(tk.Toplevel):
             first_name = list(self.parent.settings['post_editing_prompts'].keys())[0]
             self.prompt_var.set(first_name)
             self._on_prompt_select()
-
+    
     def _check_for_resume_task(self):
         if os.path.exists(RESUME_PE_FILE):
             try:
@@ -614,34 +612,34 @@ class PostEditingWindow(tk.Toplevel):
             except Exception as e:
                 log_error(f"Failed to read post-edit resume file: {e}")
                 if os.path.exists(RESUME_PE_FILE): os.remove(RESUME_PE_FILE)
-
+    
     def _load_resume_state(self, data):
         self.resume_data = data
         self.source_file_path.set(data.get('current_file', ''))
         self._update_status("Ready to resume. Click 'Start Post-editing'.", "blue")
-
+    
     def _save_resume_state(self, current_file, last_index, edited_paras):
         state = {'current_file': current_file, 'last_row_index': last_index, 'edited_paragraphs': edited_paras}
         try:
             with open(RESUME_PE_FILE, 'w', encoding='utf-8') as f: json.dump(state, f, indent=4)
         except Exception as e:
             log_error(f"Failed to save post-edit resume state: {e}")
-
+    
     def _start_post_editing(self):
         if not self.source_file_path.get(): return messagebox.showerror("Error", "Please select an Excel file.", parent=self)
         prompt = self.prompt_text.get("1.0", tk.END).strip()
         if not prompt: return messagebox.showerror("Error", "Prompt cannot be empty.", parent=self)
         if "{source}" not in prompt or "{target}" not in prompt:
             return messagebox.showerror("Error", "Prompt must contain {source} and {target} placeholders.", parent=self)
-
+    
         self.is_processing = True
         self.stop_requested.clear()
         self.process_button.config(text="Stop Processing", command=self._stop_post_editing, style="Stop.TButton")
         self._update_status("Processing...", "orange")
-
+    
         threading.Thread(target=self._post_editing_task, args=(self.resume_data,), daemon=True).start()
         self.resume_data = None
-
+    
     def _stop_post_editing(self):
         self.stop_requested.set()
         self._cancel_timer()
@@ -658,7 +656,7 @@ class PostEditingWindow(tk.Toplevel):
             
             if not api_key: raise ValueError("API Key is not set.")
             if not base_url: raise ValueError(f"URL for provider '{provider_name}' not found.")
-
+    
             client = openai.OpenAI(api_key=api_key, base_url=base_url)
             file_path = self.source_file_path.get()
             
@@ -667,24 +665,24 @@ class PostEditingWindow(tk.Toplevel):
             
             if 'Source' not in df.columns or 'Translation' not in df.columns:
                 raise ValueError("Excel file must contain 'Source' and 'Translation' columns.")
-
+    
             edited_paragraphs = []
             total_rows = len(df)
             start_row = 0
             if resume_data and file_path == resume_data.get('current_file'):
                 start_row = resume_data.get('last_row_index', -1) + 1
                 edited_paragraphs = resume_data.get('edited_paragraphs', [])
-
+    
             for i, row in df.iloc[start_row:].iterrows():
                 if self.stop_requested.is_set():
                     self._save_resume_state(file_path, i - 1, edited_paragraphs)
                     self.after(0, self._update_status, f"Stopped. Progress for '{os.path.basename(file_path)}' saved.", "blue")
                     return
-
+    
                 self.after(0, self._update_status, f"Editing row {i + 1}/{total_rows}", "orange")
                 start_time = time.time()
                 self.after(0, self._update_timer, start_time)
-
+    
                 source_text, target_text = str(row['Source']), str(row['Translation'])
                 full_prompt = prompt_template.format(source=source_text, target=target_text)
                 
@@ -694,11 +692,11 @@ class PostEditingWindow(tk.Toplevel):
                 edited_paragraphs.append(edited_para)
             
             self.after(0, self._update_status, "Saving output files...", "orange")
-
+    
             output_df = pd.DataFrame({'Source': df['Source'], 'Translation': edited_paragraphs})
             base_name = os.path.splitext(os.path.basename(file_path))[0]
             output_dir = os.path.dirname(file_path)
-
+    
             excel_path = os.path.join(output_dir, f"{base_name}_postedited.xlsx")
             output_df.to_excel(excel_path, index=False, engine='openpyxl')
             
@@ -708,7 +706,7 @@ class PostEditingWindow(tk.Toplevel):
             
             if os.path.exists(RESUME_PE_FILE): os.remove(RESUME_PE_FILE)
             self.after(0, self._update_status, "Post-editing complete! Files saved.", "green")
-
+    
         except Exception as e:
             error_message = f"Processing failed: {e}"
             log_error(f"Post-editing task failed. Error: {e}")
@@ -717,5 +715,5 @@ class PostEditingWindow(tk.Toplevel):
         
         finally:
             self.is_processing = False
-            self.after(0, lambda: self.process_button.config(text="Start Post-editing", command=self._start_post_editing, style="Accent.TButton"))
+            self.after(0, lambda: self.process_button.config(text="Start Post-editing", command=self._start_post_editing, style="TButton"))
             self.after(0, self._cancel_timer)

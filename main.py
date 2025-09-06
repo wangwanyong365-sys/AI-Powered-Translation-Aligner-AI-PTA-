@@ -49,8 +49,6 @@ class TranslationApp(tk.Tk):
     def _setup_style(self):
         self.style = ttk.Style(self)
         self.style.theme_use("clam")
-        self.style.configure("Accent.TButton", font=("Segoe UI", 12, "bold"), padding=(10, 5))
-        self.style.map("Accent.TButton", background=[("active", "#005f9e"), ("!disabled", "#0078d4")], foreground=[("!disabled", "white")])
         self.style.configure("Stop.TButton", font=("Segoe UI", 12, "bold"), padding=(10, 5))
         self.style.map("Stop.TButton", background=[("active", "#c42b1c"), ("!disabled", "#d13438")], foreground=[("!disabled", "white")])
         self.style.configure("TLabelFrame.Label", font=("Segoe UI", 11, "bold"))
@@ -170,7 +168,7 @@ class TranslationApp(tk.Tk):
         prompt_scrollbar.grid(row=1, column=1, sticky="ns")
         self.prompt_text.config(yscrollcommand=prompt_scrollbar.set)
     
-        self.process_button = ttk.Button(main_frame, text="Start Processing", style="Accent.TButton", command=self._start_processing)
+        self.process_button = ttk.Button(main_frame, text="Start Processing", command=self._start_processing)
         self.process_button.grid(row=3, column=0, pady=10, ipady=5, sticky="ew")
         
         status_frame = ttk.Frame(self)
@@ -328,7 +326,7 @@ SOFTWARE."""
         model_name = self.model_name_var.get().strip()
         provider_name = self.api_provider_var.get()
         base_url = self.settings['api_providers'].get(provider_name)
-
+    
         if not api_key:
             messagebox.showerror("Error", "API Key is required for the test.", parent=self)
             return
@@ -338,12 +336,12 @@ SOFTWARE."""
         if not base_url:
             messagebox.showerror("Error", f"Could not find URL for provider '{provider_name}'.", parent=self)
             return
-
+    
         self.test_api_button.config(state=tk.DISABLED)
         messagebox.showinfo("Testing", "Sending a test request... Please wait.", parent=self)
-
+    
         threading.Thread(target=self._test_api_thread_task, args=(api_key, base_url, model_name), daemon=True).start()
-
+    
     def _test_api_thread_task(self, api_key, base_url, model_name):
         try:
             client = openai.OpenAI(api_key=api_key, base_url=base_url)
@@ -624,7 +622,7 @@ SOFTWARE."""
         
         finally:
             self.is_processing = False
-            self.after(0, lambda: self.process_button.config(text="Start Processing", command=self._start_processing, style="Accent.TButton"))
+            self.after(0, lambda: self.process_button.config(text="Start Processing", command=self._start_processing, style="TButton"))
             self.after(0, self._cancel_timer)
 
 if __name__ == "__main__":
