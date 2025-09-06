@@ -650,14 +650,30 @@ class PostEditingWindow(tk.Toplevel):
             provider_name = self.parent.api_provider_var.get()
             api_key = self.parent._get_current_api_key()
             model_name = self.parent.model_name_var.get().strip()
-            base_url = self.parent.settings['api_providers'].get(provider_name)
             max_tokens = self.parent.max_tokens_var.get()
             prompt_template = self.prompt_text.get("1.0", tk.END).strip()
             
             if not api_key: raise ValueError("API Key is not set.")
-            if not base_url: raise ValueError(f"URL for provider '{provider_name}' not found.")
-    
-            client = openai.OpenAI(api_key=api_key, base_url=base_url)
+            if not model_name: raise ValueError("Model Name is not set.")
+            
+            provider_config = self.parent.settings['api_providers'][provider_name]
+
+            if provider_name == "Microsoft Azure":
+                azure_endpoint = provider_config.get('azure_endpoint')
+                api_version = provider_config.get('api_version')
+                if not azure_endpoint or not api_version:
+                    raise ValueError("Azure Endpoint and API Version must be configured.")
+                client = openai.AzureOpenAI(
+                    api_key=api_key,
+                    azure_endpoint=azure_endpoint,
+                    api_version=api_version,
+                )
+            else:
+                base_url = provider_config.get('base_url')
+                if not base_url:
+                    raise ValueError(f"URL for provider '{provider_name}' not found.")
+                client = openai.OpenAI(api_key=api_key, base_url=base_url)
+
             file_path = self.source_file_path.get()
             
             self.after(0, self._update_status, f"Reading: {os.path.basename(file_path)}", "orange")
@@ -693,7 +709,7 @@ class PostEditingWindow(tk.Toplevel):
             
             self.after(0, self._update_status, "Saving output files...", "orange")
     
-            output_df = pd.DataFrame({'Source': df['Source'], 'Translation': edited_paragraphs})
+            output_df = pd.DataFrame({'Source': df['Source'], 'Translation': df.iloc[:len(edited_paragraphs)]['Translation'], 'Post-edited': edited_paragraphs})
             base_name = os.path.splitext(os.path.basename(file_path))[0]
             output_dir = os.path.dirname(file_path)
     

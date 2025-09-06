@@ -31,12 +31,28 @@ def load_settings():
         "max_tokens": 8000,
         "context_before": 1,
         "context_after": 1,
-        "api_keys": {},
-        "model_names": ["deepseek-chat", "deepseek-reasoner"],
         "api_providers": {
-            "DeepSeek": "https://api.deepseek.com",
-            "SiliconFlow": "https://api.siliconflow.cn/v1",
-            "OpenAI": "https://api.openai.com/v1"
+            "DeepSeek": {
+                "base_url": "https://api.deepseek.com",
+                "api_keys": {},
+                "model_names": ["deepseek-chat", "deepseek-reasoner"]
+            },
+            "SiliconFlow": {
+                "base_url": "https://api.siliconflow.cn/v1",
+                "api_keys": {},
+                "model_names": []
+            },
+            "OpenAI": {
+                "base_url": "https://api.openai.com/v1",
+                "api_keys": {},
+                "model_names": ["gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"]
+            },
+            "Microsoft Azure": {
+                "azure_endpoint": "",
+                "api_version": "2024-12-01-preview",
+                "api_keys": {},
+                "model_names": []
+            }
         },
         "prompts": {
             "Default Translation Prompt": (
@@ -63,12 +79,27 @@ def load_settings():
     try:
         with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
             settings = json.load(f)
-            for key, value in default_settings.items():
-                if isinstance(value, dict):
-                    settings.setdefault(key, {}).update({k: v for k, v in value.items() if k not in settings.get(key, {})})
+
+        for key, value in default_settings.items():
+            settings.setdefault(key, value)
+        
+        default_providers = default_settings.get("api_providers", {})
+        loaded_providers = settings.get("api_providers", {})
+        for p_name, p_defaults in default_providers.items():
+            loaded_providers.setdefault(p_name, p_defaults)
+            for sub_key, sub_default in p_defaults.items():
+                if isinstance(sub_default, dict):
+                    loaded_providers[p_name].setdefault(sub_key, {})
+                    for k, v in sub_default.items():
+                         loaded_providers[p_name][sub_key].setdefault(k, v)
                 else:
-                    settings.setdefault(key, value)
-            return settings
+                    loaded_providers[p_name].setdefault(sub_key, sub_default)
+        settings["api_providers"] = loaded_providers
+
+        settings.pop("api_keys", None)
+        settings.pop("model_names", None)
+            
+        return settings
     except (json.JSONDecodeError, Exception) as e:
         log_error(f"Failed to load settings.json: {e}. Using default settings.")
         return default_settings

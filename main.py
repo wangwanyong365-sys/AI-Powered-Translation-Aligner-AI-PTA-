@@ -21,7 +21,6 @@ class TranslationApp(tk.Tk):
         self.annotator_window = None
         self.post_editor_window = None
         
-
         self.stop_requested = threading.Event()
         self.is_processing = False
         self.resume_data = None
@@ -54,9 +53,9 @@ class TranslationApp(tk.Tk):
         self.style.configure("TLabelFrame.Label", font=("Segoe UI", 11, "bold"))
     
     def _setup_ui(self):
-        self.title("AI-Powered Translation Aligner (AI-PTA) v0.11")
-        self.geometry("800x850") 
-        self.minsize(600, 700)
+        self.title("AI-Powered Translation Aligner (AI-PTA) v0.12")
+        self.geometry("800x900")
+        self.minsize(800, 800)
     
         self.menu_bar = tk.Menu(self)
         self.config(menu=self.menu_bar)
@@ -106,16 +105,10 @@ class TranslationApp(tk.Tk):
         ttk.Entry(settings_frame, textvariable=self.context_after_var, width=10).grid(row=1, column=3, sticky="w", padx=5, pady=5)
     
         ttk.Label(settings_frame, text="API Provider:").grid(row=2, column=0, sticky="w", padx=5, pady=5)
-        provider_frame = ttk.Frame(settings_frame)
-        provider_frame.grid(row=2, column=1, columnspan=3, sticky="ew", padx=5, pady=5)
-        provider_frame.columnconfigure(0, weight=1)
         self.api_provider_var = tk.StringVar()
-        self.api_provider_combo = ttk.Combobox(provider_frame, textvariable=self.api_provider_var)
-        self.api_provider_combo.grid(row=0, column=0, sticky="ew")
-        provider_btn_frame = ttk.Frame(provider_frame)
-        provider_btn_frame.grid(row=0, column=1, padx=(5,0))
-        ttk.Button(provider_btn_frame, text="Save", command=self._save_api_provider, width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Button(provider_btn_frame, text="Delete", command=self._delete_api_provider, width=6).pack(side=tk.LEFT, padx=2)
+        self.api_provider_combo = ttk.Combobox(settings_frame, textvariable=self.api_provider_var, state="readonly")
+        self.api_provider_combo.grid(row=2, column=1, columnspan=3, sticky="ew", padx=5, pady=5)
+        self.api_provider_combo.bind("<<ComboboxSelected>>", self._on_provider_select)
     
         ttk.Label(settings_frame, text="API Key:").grid(row=3, column=0, sticky="w", padx=5, pady=5)
         api_key_frame = ttk.Frame(settings_frame)
@@ -144,6 +137,17 @@ class TranslationApp(tk.Tk):
         ttk.Button(model_btn_frame, text="Delete", command=self._delete_model_name, width=6).pack(side=tk.LEFT, padx=2)
         self.test_api_button = ttk.Button(model_btn_frame, text="Test", command=self._test_api_connection, width=6)
         self.test_api_button.pack(side=tk.LEFT, padx=2)
+
+        self.azure_settings_frame = ttk.LabelFrame(settings_frame, text="Microsoft Azure Settings", padding=5)
+        self.azure_settings_frame.grid(row=5, column=0, columnspan=4, sticky="ew", padx=5, pady=5)
+        ttk.Label(self.azure_settings_frame, text="Azure Endpoint:").grid(row=0, column=0, sticky="w", padx=5, pady=2)
+        self.azure_endpoint_var = tk.StringVar()
+        ttk.Entry(self.azure_settings_frame, textvariable=self.azure_endpoint_var).grid(row=0, column=1, sticky="ew", padx=5, pady=2)
+        ttk.Label(self.azure_settings_frame, text="API Version:").grid(row=1, column=0, sticky="w", padx=5, pady=2)
+        self.api_version_var = tk.StringVar()
+        ttk.Entry(self.azure_settings_frame, textvariable=self.api_version_var).grid(row=1, column=1, sticky="ew", padx=5, pady=2)
+        ttk.Button(self.azure_settings_frame, text="Save Azure Config", command=self._save_azure_config).grid(row=1, column=2, padx=5, pady=2)
+        self.azure_settings_frame.columnconfigure(1, weight=1)
     
         prompt_frame = ttk.LabelFrame(main_frame, text="Prompt Management", padding="10")
         prompt_frame.grid(row=2, column=0, sticky="nsew", pady=5)
@@ -201,14 +205,39 @@ class TranslationApp(tk.Tk):
             self.prompt_var.set(first_prompt_name)
             self._on_prompt_select()
         
-        self._update_api_key_combo()
-        self._update_model_name_combo()
         self._update_api_provider_combo()
-        if self.settings['model_names']:
-            self.model_name_var.set(self.settings['model_names'][0])
         if self.settings.get('api_providers'):
             first_provider = list(self.settings['api_providers'].keys())[0]
             self.api_provider_var.set(first_provider)
+        self._on_provider_select()
+
+    def _on_provider_select(self, event=None):
+        provider_name = self.api_provider_var.get()
+        if provider_name == "Microsoft Azure":
+            self.azure_settings_frame.grid()
+            provider_config = self.settings["api_providers"].get(provider_name, {})
+            self.azure_endpoint_var.set(provider_config.get("azure_endpoint", ""))
+            self.api_version_var.set(provider_config.get("api_version", ""))
+        else:
+            self.azure_settings_frame.grid_remove()
+
+        self.api_key_var.set("")
+        self.model_name_var.set("")
+        self._update_api_key_combo()
+        self._update_model_name_combo()
+
+    def _save_azure_config(self):
+        provider_name = "Microsoft Azure"
+        if self.api_provider_var.get() != provider_name:
+            return
+        
+        endpoint = self.azure_endpoint_var.get().strip()
+        version = self.api_version_var.get().strip()
+
+        self.settings["api_providers"][provider_name]["azure_endpoint"] = endpoint
+        self.settings["api_providers"][provider_name]["api_version"] = version
+        save_settings(self.settings)
+        messagebox.showinfo("Success", "Azure configuration saved.")
     
     def _show_about_info(self):
         messagebox.showinfo(
@@ -244,7 +273,7 @@ furnished to do so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
@@ -256,95 +285,164 @@ SOFTWARE."""
 
     def _get_current_api_key(self):
         displayed_text = self.api_key_var.get().strip()
-        return self.settings['api_keys'].get(displayed_text, displayed_text)
+        provider = self.api_provider_var.get()
+        if not provider or not displayed_text:
+            return displayed_text
+        
+        api_keys_for_provider = self.settings['api_providers'].get(provider, {}).get('api_keys', {})
+        return api_keys_for_provider.get(displayed_text, displayed_text)
     
     def _update_api_key_combo(self):
-        self.api_key_combo['values'] = list(self.settings['api_keys'].keys())
+        provider = self.api_provider_var.get()
+        if not provider:
+            self.api_key_combo['values'] = []
+            return
+        
+        keys = self.settings['api_providers'].get(provider, {}).get('api_keys', {})
+        self.api_key_combo['values'] = list(keys.keys())
     
     def _on_api_key_select(self, event=None):
+        provider = self.api_provider_var.get()
+        if not provider: return
+        
         selected_name = self.api_key_combo.get()
-        if selected_name in self.settings['api_keys']:
+        api_keys_for_provider = self.settings['api_providers'][provider]['api_keys']
+        if selected_name in api_keys_for_provider:
             self.api_key_var.set(selected_name)
             self.api_key_combo.config(show="")
     
     def _on_api_key_typed(self, event=None):
+        provider = self.api_provider_var.get()
+        if not provider: return
+
         current_text = self.api_key_var.get()
-        self.api_key_combo.config(show="" if current_text in self.settings['api_keys'] else "●")
+        api_keys_for_provider = self.settings['api_providers'][provider]['api_keys']
+        self.api_key_combo.config(show="" if current_text in api_keys_for_provider else "●")
     
     def _save_api_key(self):
+        provider = self.api_provider_var.get()
+        if not provider:
+            return messagebox.showwarning("Warning", "Please select an API Provider first.")
+
         key_or_name = self.api_key_var.get().strip()
         if not key_or_name: return messagebox.showwarning("Warning", "API Key cannot be empty.")
-        if key_or_name in self.settings['api_keys']: return messagebox.showinfo("Info", "This is a saved API Key name, no need to save again.")
+
+        api_keys_for_provider = self.settings['api_providers'][provider]['api_keys']
+        if key_or_name in api_keys_for_provider:
+            return messagebox.showinfo("Info", "This is a saved API Key name, no need to save again.")
         
         name = simpledialog.askstring("Save API Key", "Please enter an easy-to-remember name for this Key:", parent=self)
         if name and name.strip():
             name = name.strip()
-            if name in self.settings['api_keys'] and not messagebox.askyesno("Confirm Overwrite", f"Name '{name}' already exists. Overwrite with the new Key?"):
+            if name in api_keys_for_provider and not messagebox.askyesno("Confirm Overwrite", f"Name '{name}' already exists. Overwrite with the new Key?"):
                 return
-            self.settings['api_keys'][name] = key_or_name
+            
+            api_keys_for_provider[name] = key_or_name
             save_settings(self.settings)
             self._update_api_key_combo()
             self.api_key_combo.set(name)
             self.api_key_combo.config(show="")
-            messagebox.showinfo("Success", f"API Key '{name}' has been saved.")
+            messagebox.showinfo("Success", f"API Key '{name}' has been saved for {provider}.")
     
     def _delete_api_key(self):
+        provider = self.api_provider_var.get()
+        if not provider:
+            return messagebox.showerror("Error", "Please select an API Provider first.")
+            
         name = self.api_key_combo.get()
-        if not name or name not in self.settings['api_keys']: return messagebox.showerror("Error", "Please select an API Key to delete first.")
+        api_keys_for_provider = self.settings['api_providers'][provider]['api_keys']
+
+        if not name or name not in api_keys_for_provider:
+             return messagebox.showerror("Error", "Please select a saved API Key to delete first.")
         if messagebox.askyesno("Confirm Deletion", f"Are you sure you want to delete API Key '{name}'?"):
-            del self.settings['api_keys'][name]
+            del api_keys_for_provider[name]
             save_settings(self.settings)
             self._update_api_key_combo()
             self.api_key_var.set("")
             self.api_key_combo.config(show="●")
     
     def _update_model_name_combo(self):
-        self.model_name_combo['values'] = self.settings.get('model_names', [])
+        provider = self.api_provider_var.get()
+        if not provider:
+            self.model_name_combo['values'] = []
+            return
+            
+        models = self.settings['api_providers'].get(provider, {}).get('model_names', [])
+        self.model_name_combo['values'] = models
     
     def _save_model_name(self):
+        provider = self.api_provider_var.get()
+        if not provider:
+            return messagebox.showwarning("Warning", "Please select an API Provider first.")
+            
         name = self.model_name_var.get().strip()
         if not name: return messagebox.showwarning("Warning", "Model name cannot be empty.")
-        if name not in self.settings['model_names']:
-            self.settings['model_names'].append(name)
+        
+        model_names_for_provider = self.settings['api_providers'][provider]['model_names']
+        if name not in model_names_for_provider:
+            model_names_for_provider.append(name)
             save_settings(self.settings)
             self._update_model_name_combo()
-            messagebox.showinfo("Success", f"Model '{name}' has been saved to the list.")
+            messagebox.showinfo("Success", f"Model '{name}' has been saved for {provider}.")
         else:
-            messagebox.showinfo("Info", f"Model '{name}' already exists in the list.")
+            messagebox.showinfo("Info", f"Model '{name}' already exists in the list for {provider}.")
     
     def _delete_model_name(self):
+        provider = self.api_provider_var.get()
+        if not provider:
+            return messagebox.showerror("Error", "Please select an API Provider first.")
+
         name = self.model_name_var.get().strip()
-        if not name or name not in self.settings['model_names']: return messagebox.showerror("Error", "The currently entered model name is not in the list.")
+        model_names_for_provider = self.settings['api_providers'][provider]['model_names']
+
+        if not name or name not in model_names_for_provider:
+             return messagebox.showerror("Error", "The currently entered model name is not in the list.")
         if messagebox.askyesno("Confirm Deletion", f"Are you sure you want to delete model '{name}' from the list?"):
-            self.settings['model_names'].remove(name)
+            model_names_for_provider.remove(name)
             save_settings(self.settings)
             self._update_model_name_combo()
             self.model_name_var.set("")
     
-    def _test_api_connection(self):
-        api_key = self._get_current_api_key()
-        model_name = self.model_name_var.get().strip()
+    def _create_client(self):
         provider_name = self.api_provider_var.get()
-        base_url = self.settings['api_providers'].get(provider_name)
-    
+        api_key = self._get_current_api_key()
+
+        if not provider_name:
+            raise ValueError("API Provider must be selected.")
         if not api_key:
-            messagebox.showerror("Error", "API Key is required for the test.", parent=self)
-            return
+            raise ValueError("API Key is required.")
+
+        provider_config = self.settings['api_providers'][provider_name]
+
+        if provider_name == "Microsoft Azure":
+            azure_endpoint = provider_config.get('azure_endpoint')
+            api_version = provider_config.get('api_version')
+            if not azure_endpoint or not api_version:
+                raise ValueError("Azure Endpoint and API Version must be configured in settings.")
+            return openai.AzureOpenAI(
+                api_key=api_key,
+                azure_endpoint=azure_endpoint,
+                api_version=api_version,
+            )
+        else:
+            base_url = provider_config.get('base_url')
+            if not base_url:
+                raise ValueError(f"Base URL for '{provider_name}' is not configured.")
+            return openai.OpenAI(api_key=api_key, base_url=base_url)
+
+    def _test_api_connection(self):
+        model_name = self.model_name_var.get().strip()
         if not model_name:
             messagebox.showerror("Error", "Model Name is required for the test.", parent=self)
             return
-        if not base_url:
-            messagebox.showerror("Error", f"Could not find URL for provider '{provider_name}'.", parent=self)
-            return
-    
+
         self.test_api_button.config(state=tk.DISABLED)
         messagebox.showinfo("Testing", "Sending a test request... Please wait.", parent=self)
+        threading.Thread(target=self._test_api_thread_task, args=(model_name,), daemon=True).start()
     
-        threading.Thread(target=self._test_api_thread_task, args=(api_key, base_url, model_name), daemon=True).start()
-    
-    def _test_api_thread_task(self, api_key, base_url, model_name):
+    def _test_api_thread_task(self, model_name):
         try:
-            client = openai.OpenAI(api_key=api_key, base_url=base_url)
+            client = self._create_client()
             response_content = test_api_connection(client, model_name)
             self.after(0, lambda: messagebox.showinfo("Success", f"Connection successful!\n\nModel response: '{response_content}'", parent=self))
         except Exception as e:
@@ -356,46 +454,6 @@ SOFTWARE."""
             
     def _update_api_provider_combo(self):
         self.api_provider_combo['values'] = list(self.settings.get('api_providers', {}).keys())
-    
-    def _save_api_provider(self):
-        url = self.api_provider_var.get().strip()
-        if not url:
-            messagebox.showwarning("Warning", "API Provider URL cannot be empty.", parent=self)
-            return
-    
-        if url in self.settings['api_providers']:
-            messagebox.showinfo("Info", f"'{url}' is already a saved provider name. To add a new one, please enter its full URL in the box.", parent=self)
-            return
-    
-        if not url.startswith(("http://", "https://")):
-            messagebox.showwarning("Invalid URL", "Please enter a valid URL, starting with 'http://' or 'https://'.", parent=self)
-            return
-    
-        name = simpledialog.askstring("Save API Provider", "Please enter a name for this provider (e.g., SiliconFlow):", parent=self)
-        if not (name and name.strip()):
-            return
-    
-        name = name.strip()
-        if name in self.settings['api_providers']:
-            if not messagebox.askyesno("Confirm Overwrite", f"The name '{name}' already exists. Do you want to update its URL?", parent=self):
-                return
-        
-        self.settings['api_providers'][name] = url
-        save_settings(self.settings)
-        
-        self._update_api_provider_combo()
-        self.api_provider_var.set(name)
-        messagebox.showinfo("Success", f"API Provider '{name}' has been saved.", parent=self)
-    
-    def _delete_api_provider(self):
-        name = self.api_provider_var.get().strip()
-        if not name or name not in self.settings['api_providers']:
-            return messagebox.showerror("Error", "Please select a saved API Provider to delete.")
-        if messagebox.askyesno("Confirm Deletion", f"Are you sure you want to delete API Provider '{name}'?"):
-            del self.settings['api_providers'][name]
-            save_settings(self.settings)
-            self._update_api_provider_combo()
-            self.api_provider_var.set("")
     
     def _update_prompt_combo(self):
         self.prompt_combo['values'] = list(self.settings['prompts'].keys())
@@ -507,6 +565,7 @@ SOFTWARE."""
     def _start_processing(self):
         if not self.selected_files: return messagebox.showerror("Error", "Please select TXT files first.")
         if not self._get_current_api_key(): return messagebox.showerror("Error", "API Key cannot be empty.")
+        if not self.model_name_var.get().strip(): return messagebox.showerror("Error", "Model Name cannot be empty.")
         if not self.prompt_text.get("1.0", tk.END).strip(): return messagebox.showerror("Error", "Prompt content cannot be empty.")
     
         self.is_processing = True
@@ -524,19 +583,13 @@ SOFTWARE."""
     
     def _processing_task(self, resume_data=None):
         try:
-            provider_name = self.api_provider_var.get()
-            api_key = self._get_current_api_key()
-            model_name = self.model_name_var.get().strip() or "deepseek-chat"
-            base_url = self.settings['api_providers'].get(provider_name)
-            if not base_url:
-                self.after(0, messagebox.showerror, "Error", f"Could not find the URL for API Provider '{provider_name}'.")
-                raise ValueError(f"Provider URL not found for '{provider_name}'")
+            model_name = self.model_name_var.get().strip()
             user_prompt_template = self.prompt_text.get("1.0", tk.END).strip()
             context_before = self.context_before_var.get()
             context_after = self.context_after_var.get()
             max_tokens_value = self.max_tokens_var.get()
     
-            client = openai.OpenAI(api_key=api_key, base_url=base_url)
+            client = self._create_client()
     
             total_files = len(self.selected_files)
             start_file_index = 0
