@@ -39,26 +39,27 @@ class TranslationApp(tk.Tk):
                 return
             self.stop_requested.set()
         
-        self.settings['max_tokens'] = self.max_tokens_var.get()
-        self.settings['context_before'] = self.context_before_var.get()
-        self.settings['context_after'] = self.context_after_var.get()
         save_settings(self.settings)
         self.destroy()
     
     def _setup_style(self):
         self.style = ttk.Style(self)
         self.style.theme_use("clam")
-        self.style.configure("Stop.TButton", font=("Segoe UI", 12, "bold"), padding=(10, 5))
+        self.style.configure("Stop.TButton", font=("Segoe UI", 11), padding=(10, 5))
         self.style.map("Stop.TButton", background=[("active", "#c42b1c"), ("!disabled", "#d13438")], foreground=[("!disabled", "white")])
         self.style.configure("TLabelFrame.Label", font=("Segoe UI", 11, "bold"))
     
     def _setup_ui(self):
-        self.title("AI-Powered Translation Aligner (AI-PTA) v0.12")
-        self.geometry("800x900")
-        self.minsize(800, 800)
+        self.title("AI-Powered Translation Aligner (AI-PTA) v0.13")
+        self.geometry("1000x700")
+        self.minsize(1000, 700)
     
         self.menu_bar = tk.Menu(self)
         self.config(menu=self.menu_bar)
+
+        settings_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.menu_bar.add_cascade(label="Settings", menu=settings_menu)
+        settings_menu.add_command(label="Translation Options...", command=self._open_translation_settings)
         
         tools_menu = tk.Menu(self.menu_bar, tearoff=0)
         self.menu_bar.add_cascade(label="Tools", menu=tools_menu)
@@ -70,13 +71,23 @@ class TranslationApp(tk.Tk):
         help_menu.add_command(label="About", command=self._show_about_info)
         help_menu.add_command(label="View License", command=self._show_license_info)
     
-        main_frame = ttk.Frame(self, padding="10 10 10 10")
+        main_frame = ttk.Frame(self, padding="10")
         main_frame.pack(expand=True, fill=tk.BOTH)
-        
+        main_frame.rowconfigure(0, weight=1)
         main_frame.columnconfigure(0, weight=1)
-        main_frame.rowconfigure(2, weight=1)
-    
-        files_frame = ttk.LabelFrame(main_frame, text="File Selection", padding="10")
+
+        paned_window = ttk.PanedWindow(main_frame, orient=tk.HORIZONTAL)
+        paned_window.grid(row=0, column=0, sticky="nsew")
+
+        left_pane = ttk.Frame(paned_window, padding=5)
+        right_pane = ttk.Frame(paned_window, padding=5)
+        paned_window.add(left_pane, weight=2)
+        paned_window.add(right_pane, weight=1)
+
+        left_pane.rowconfigure(1, weight=1)
+        left_pane.columnconfigure(0, weight=1)
+        
+        files_frame = ttk.LabelFrame(left_pane, text="File Selection", padding="10")
         files_frame.grid(row=0, column=0, sticky="ew", pady=(0, 10))
         files_frame.columnconfigure(0, weight=1)
         self.file_listbox = tk.Listbox(files_frame, height=5, font=("Segoe UI", 10))
@@ -86,71 +97,9 @@ class TranslationApp(tk.Tk):
         self.file_listbox.config(yscrollcommand=scrollbar.set)
         browse_button = ttk.Button(files_frame, text="Select TXT Files...", command=self._on_browse_files)
         browse_button.grid(row=1, column=0, columnspan=2, pady=(10, 0), sticky="e")
-    
-        settings_frame = ttk.LabelFrame(main_frame, text="Settings", padding="10")
-        settings_frame.grid(row=1, column=0, sticky="ew", pady=5)
-        settings_frame.columnconfigure(1, weight=1)
-        settings_frame.columnconfigure(3, weight=1) 
-    
-        ttk.Label(settings_frame, text="Max Tokens:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
-        self.max_tokens_var = tk.IntVar(value=self.settings.get("max_tokens", 8000))
-        ttk.Entry(settings_frame, textvariable=self.max_tokens_var, width=10).grid(row=0, column=1, sticky="w", padx=5, pady=5)
-    
-        ttk.Label(settings_frame, text="Previous Paragraphs:").grid(row=1, column=0, sticky="w", padx=5, pady=5)
-        self.context_before_var = tk.IntVar(value=self.settings.get("context_before", 1))
-        ttk.Entry(settings_frame, textvariable=self.context_before_var, width=10).grid(row=1, column=1, sticky="w", padx=5, pady=5)
-        
-        ttk.Label(settings_frame, text="Next Paragraphs:").grid(row=1, column=2, sticky="w", padx=20, pady=5)
-        self.context_after_var = tk.IntVar(value=self.settings.get("context_after", 1))
-        ttk.Entry(settings_frame, textvariable=self.context_after_var, width=10).grid(row=1, column=3, sticky="w", padx=5, pady=5)
-    
-        ttk.Label(settings_frame, text="API Provider:").grid(row=2, column=0, sticky="w", padx=5, pady=5)
-        self.api_provider_var = tk.StringVar()
-        self.api_provider_combo = ttk.Combobox(settings_frame, textvariable=self.api_provider_var, state="readonly")
-        self.api_provider_combo.grid(row=2, column=1, columnspan=3, sticky="ew", padx=5, pady=5)
-        self.api_provider_combo.bind("<<ComboboxSelected>>", self._on_provider_select)
-    
-        ttk.Label(settings_frame, text="API Key:").grid(row=3, column=0, sticky="w", padx=5, pady=5)
-        api_key_frame = ttk.Frame(settings_frame)
-        api_key_frame.grid(row=3, column=1, columnspan=3, sticky="ew", padx=5, pady=5)
-        api_key_frame.columnconfigure(0, weight=1)
-        self.api_key_var = tk.StringVar()
-        self.api_key_combo = ttk.Combobox(api_key_frame, textvariable=self.api_key_var)
-        self.api_key_combo.grid(row=0, column=0, sticky="ew")
-        self.api_key_combo.bind("<<ComboboxSelected>>", self._on_api_key_select)
-        self.api_key_combo.bind("<KeyRelease>", self._on_api_key_typed) 
-        api_btn_frame = ttk.Frame(api_key_frame)
-        api_btn_frame.grid(row=0, column=1, padx=(5,0))
-        ttk.Button(api_btn_frame, text="Save", command=self._save_api_key, width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Button(api_btn_frame, text="Delete", command=self._delete_api_key, width=6).pack(side=tk.LEFT, padx=2)
-    
-        ttk.Label(settings_frame, text="Model Name:").grid(row=4, column=0, sticky="w", padx=5, pady=5)
-        model_frame = ttk.Frame(settings_frame)
-        model_frame.grid(row=4, column=1, columnspan=3, sticky="ew", padx=5, pady=5)
-        model_frame.columnconfigure(0, weight=1)
-        self.model_name_var = tk.StringVar()
-        self.model_name_combo = ttk.Combobox(model_frame, textvariable=self.model_name_var)
-        self.model_name_combo.grid(row=0, column=0, sticky="ew")
-        model_btn_frame = ttk.Frame(model_frame)
-        model_btn_frame.grid(row=0, column=1, padx=(5,0))
-        ttk.Button(model_btn_frame, text="Save", command=self._save_model_name, width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Button(model_btn_frame, text="Delete", command=self._delete_model_name, width=6).pack(side=tk.LEFT, padx=2)
-        self.test_api_button = ttk.Button(model_btn_frame, text="Test", command=self._test_api_connection, width=6)
-        self.test_api_button.pack(side=tk.LEFT, padx=2)
 
-        self.azure_settings_frame = ttk.LabelFrame(settings_frame, text="Microsoft Azure Settings", padding=5)
-        self.azure_settings_frame.grid(row=5, column=0, columnspan=4, sticky="ew", padx=5, pady=5)
-        ttk.Label(self.azure_settings_frame, text="Azure Endpoint:").grid(row=0, column=0, sticky="w", padx=5, pady=2)
-        self.azure_endpoint_var = tk.StringVar()
-        ttk.Entry(self.azure_settings_frame, textvariable=self.azure_endpoint_var).grid(row=0, column=1, sticky="ew", padx=5, pady=2)
-        ttk.Label(self.azure_settings_frame, text="API Version:").grid(row=1, column=0, sticky="w", padx=5, pady=2)
-        self.api_version_var = tk.StringVar()
-        ttk.Entry(self.azure_settings_frame, textvariable=self.api_version_var).grid(row=1, column=1, sticky="ew", padx=5, pady=2)
-        ttk.Button(self.azure_settings_frame, text="Save Azure Config", command=self._save_azure_config).grid(row=1, column=2, padx=5, pady=2)
-        self.azure_settings_frame.columnconfigure(1, weight=1)
-    
-        prompt_frame = ttk.LabelFrame(main_frame, text="Prompt Management", padding="10")
-        prompt_frame.grid(row=2, column=0, sticky="nsew", pady=5)
+        prompt_frame = ttk.LabelFrame(left_pane, text="Prompt Management", padding="10")
+        prompt_frame.grid(row=1, column=0, sticky="nsew", pady=5)
         prompt_frame.columnconfigure(0, weight=1)
         prompt_frame.rowconfigure(1, weight=1)
         prompt_selection_frame = ttk.Frame(prompt_frame)
@@ -171,9 +120,61 @@ class TranslationApp(tk.Tk):
         prompt_scrollbar = ttk.Scrollbar(prompt_frame, orient=tk.VERTICAL, command=self.prompt_text.yview)
         prompt_scrollbar.grid(row=1, column=1, sticky="ns")
         self.prompt_text.config(yscrollcommand=prompt_scrollbar.set)
+
+        right_pane.rowconfigure(0, weight=0)
+        right_pane.columnconfigure(0, weight=1)
+        
+        api_settings_frame = ttk.LabelFrame(right_pane, text="API Settings", padding="10")
+        api_settings_frame.grid(row=0, column=0, sticky="new")
+        api_settings_frame.columnconfigure(1, weight=1)
+    
+        ttk.Label(api_settings_frame, text="API Provider:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
+        self.api_provider_var = tk.StringVar()
+        self.api_provider_combo = ttk.Combobox(api_settings_frame, textvariable=self.api_provider_var, state="readonly")
+        self.api_provider_combo.grid(row=0, column=1, sticky="ew", padx=5, pady=5)
+        self.api_provider_combo.bind("<<ComboboxSelected>>", self._on_provider_select)
+    
+        ttk.Label(api_settings_frame, text="API Key:").grid(row=1, column=0, sticky="w", padx=5, pady=5)
+        api_key_frame = ttk.Frame(api_settings_frame)
+        api_key_frame.grid(row=1, column=1, sticky="ew", padx=5, pady=5)
+        api_key_frame.columnconfigure(0, weight=1)
+        self.api_key_var = tk.StringVar()
+        self.api_key_combo = ttk.Combobox(api_key_frame, textvariable=self.api_key_var)
+        self.api_key_combo.grid(row=0, column=0, sticky="ew")
+        self.api_key_combo.bind("<<ComboboxSelected>>", self._on_api_key_select)
+        self.api_key_combo.bind("<KeyRelease>", self._on_api_key_typed) 
+        api_btn_frame = ttk.Frame(api_key_frame)
+        api_btn_frame.grid(row=0, column=1, padx=(5,0))
+        ttk.Button(api_btn_frame, text="Save", command=self._save_api_key, width=6).pack(side=tk.LEFT, padx=2)
+        ttk.Button(api_btn_frame, text="Delete", command=self._delete_api_key, width=6).pack(side=tk.LEFT, padx=2)
+    
+        ttk.Label(api_settings_frame, text="Model Name:").grid(row=2, column=0, sticky="w", padx=5, pady=5)
+        model_frame = ttk.Frame(api_settings_frame)
+        model_frame.grid(row=2, column=1, sticky="ew", padx=5, pady=5)
+        model_frame.columnconfigure(0, weight=1)
+        self.model_name_var = tk.StringVar()
+        self.model_name_combo = ttk.Combobox(model_frame, textvariable=self.model_name_var)
+        self.model_name_combo.grid(row=0, column=0, sticky="ew")
+        model_btn_frame = ttk.Frame(model_frame)
+        model_btn_frame.grid(row=0, column=1, padx=(5,0))
+        ttk.Button(model_btn_frame, text="Save", command=self._save_model_name, width=6).pack(side=tk.LEFT, padx=2)
+        ttk.Button(model_btn_frame, text="Delete", command=self._delete_model_name, width=6).pack(side=tk.LEFT, padx=2)
+        self.test_api_button = ttk.Button(model_btn_frame, text="Test", command=self._test_api_connection, width=6)
+        self.test_api_button.pack(side=tk.LEFT, padx=2)
+    
+        self.azure_settings_frame = ttk.LabelFrame(api_settings_frame, text="Microsoft Azure Settings", padding=5)
+        self.azure_settings_frame.grid(row=3, column=0, columnspan=2, sticky="ew", padx=5, pady=10)
+        ttk.Label(self.azure_settings_frame, text="Azure Endpoint:").grid(row=0, column=0, sticky="w", padx=5, pady=2)
+        self.azure_endpoint_var = tk.StringVar()
+        ttk.Entry(self.azure_settings_frame, textvariable=self.azure_endpoint_var).grid(row=0, column=1, sticky="ew", padx=5, pady=2)
+        ttk.Label(self.azure_settings_frame, text="API Version:").grid(row=1, column=0, sticky="w", padx=5, pady=2)
+        self.api_version_var = tk.StringVar()
+        ttk.Entry(self.azure_settings_frame, textvariable=self.api_version_var).grid(row=1, column=1, sticky="ew", padx=5, pady=2)
+        ttk.Button(self.azure_settings_frame, text="Save Azure Config", command=self._save_azure_config).grid(row=1, column=2, padx=5, pady=2)
+        self.azure_settings_frame.columnconfigure(1, weight=1)
     
         self.process_button = ttk.Button(main_frame, text="Start Processing", command=self._start_processing)
-        self.process_button.grid(row=3, column=0, pady=10, ipady=5, sticky="ew")
+        self.process_button.grid(row=1, column=0, pady=10, ipady=5, sticky="ew")
         
         status_frame = ttk.Frame(self)
         status_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=5, pady=2)
@@ -182,6 +183,45 @@ class TranslationApp(tk.Tk):
         self.timer_label = ttk.Label(status_frame, text="", anchor=tk.E, width=10)
         self.timer_label.pack(side=tk.RIGHT)
         self._update_status("Ready", "gray")
+
+    def _open_translation_settings(self):
+        dialog = tk.Toplevel(self)
+        dialog.transient(self)
+        dialog.title("Translation Options")
+        dialog.grab_set()
+        dialog.resizable(False, False)
+
+        content_frame = ttk.Frame(dialog, padding="15")
+        content_frame.pack(expand=True, fill="both")
+
+        max_tokens = tk.IntVar(value=self.settings.get("max_tokens", 8000))
+        context_before = tk.IntVar(value=self.settings.get("context_before", 1))
+        context_after = tk.IntVar(value=self.settings.get("context_after", 1))
+
+        ttk.Label(content_frame, text="Max Tokens:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
+        ttk.Entry(content_frame, textvariable=max_tokens, width=15).grid(row=0, column=1, sticky="w", padx=5, pady=5)
+        
+        ttk.Label(content_frame, text="Previous Paragraphs (Context):").grid(row=1, column=0, sticky="w", padx=5, pady=5)
+        ttk.Entry(content_frame, textvariable=context_before, width=15).grid(row=1, column=1, sticky="w", padx=5, pady=5)
+        
+        ttk.Label(content_frame, text="Next Paragraphs (Context):").grid(row=2, column=0, sticky="w", padx=5, pady=5)
+        ttk.Entry(content_frame, textvariable=context_after, width=15).grid(row=2, column=1, sticky="w", padx=5, pady=5)
+
+        def save_and_close():
+            try:
+                self.settings['max_tokens'] = max_tokens.get()
+                self.settings['context_before'] = context_before.get()
+                self.settings['context_after'] = context_after.get()
+                save_settings(self.settings)
+                messagebox.showinfo("Success", "Settings saved.", parent=dialog)
+                dialog.destroy()
+            except tk.TclError:
+                messagebox.showerror("Invalid Input", "Please ensure all values are valid integers.", parent=dialog)
+
+        button_frame = ttk.Frame(dialog, padding="10")
+        button_frame.pack(fill="x")
+        ttk.Button(button_frame, text="Save", command=save_and_close).pack(side="right", padx=5)
+        ttk.Button(button_frame, text="Cancel", command=dialog.destroy).pack(side="right")
     
     def _open_annotator(self):
         if self.annotator_window and self.annotator_window.winfo_exists():
@@ -210,7 +250,7 @@ class TranslationApp(tk.Tk):
             first_provider = list(self.settings['api_providers'].keys())[0]
             self.api_provider_var.set(first_provider)
         self._on_provider_select()
-
+    
     def _on_provider_select(self, event=None):
         provider_name = self.api_provider_var.get()
         if provider_name == "Microsoft Azure":
@@ -220,12 +260,12 @@ class TranslationApp(tk.Tk):
             self.api_version_var.set(provider_config.get("api_version", ""))
         else:
             self.azure_settings_frame.grid_remove()
-
+    
         self.api_key_var.set("")
         self.model_name_var.set("")
         self._update_api_key_combo()
         self._update_model_name_combo()
-
+    
     def _save_azure_config(self):
         provider_name = "Microsoft Azure"
         if self.api_provider_var.get() != provider_name:
@@ -233,7 +273,7 @@ class TranslationApp(tk.Tk):
         
         endpoint = self.azure_endpoint_var.get().strip()
         version = self.api_version_var.get().strip()
-
+    
         self.settings["api_providers"][provider_name]["azure_endpoint"] = endpoint
         self.settings["api_providers"][provider_name]["api_version"] = version
         save_settings(self.settings)
@@ -242,10 +282,8 @@ class TranslationApp(tk.Tk):
     def _show_about_info(self):
         messagebox.showinfo(
             "About",
-            "王万涌\n"
             "Wanyong Wang\n"
             "Email: wangwanyong365@hotmail.com\n\n"
-            "李德超\n"
             "Dechao Li\n"
             "Email: ctdechao@polyu.edu.hk\n\n"
             "Department of Language Science and Technology (LST)\n"            
@@ -314,7 +352,7 @@ SOFTWARE."""
     def _on_api_key_typed(self, event=None):
         provider = self.api_provider_var.get()
         if not provider: return
-
+    
         current_text = self.api_key_var.get()
         api_keys_for_provider = self.settings['api_providers'][provider]['api_keys']
         self.api_key_combo.config(show="" if current_text in api_keys_for_provider else "●")
@@ -323,10 +361,10 @@ SOFTWARE."""
         provider = self.api_provider_var.get()
         if not provider:
             return messagebox.showwarning("Warning", "Please select an API Provider first.")
-
+    
         key_or_name = self.api_key_var.get().strip()
         if not key_or_name: return messagebox.showwarning("Warning", "API Key cannot be empty.")
-
+    
         api_keys_for_provider = self.settings['api_providers'][provider]['api_keys']
         if key_or_name in api_keys_for_provider:
             return messagebox.showinfo("Info", "This is a saved API Key name, no need to save again.")
@@ -351,7 +389,7 @@ SOFTWARE."""
             
         name = self.api_key_combo.get()
         api_keys_for_provider = self.settings['api_providers'][provider]['api_keys']
-
+    
         if not name or name not in api_keys_for_provider:
              return messagebox.showerror("Error", "Please select a saved API Key to delete first.")
         if messagebox.askyesno("Confirm Deletion", f"Are you sure you want to delete API Key '{name}'?"):
@@ -391,10 +429,10 @@ SOFTWARE."""
         provider = self.api_provider_var.get()
         if not provider:
             return messagebox.showerror("Error", "Please select an API Provider first.")
-
+    
         name = self.model_name_var.get().strip()
         model_names_for_provider = self.settings['api_providers'][provider]['model_names']
-
+    
         if not name or name not in model_names_for_provider:
              return messagebox.showerror("Error", "The currently entered model name is not in the list.")
         if messagebox.askyesno("Confirm Deletion", f"Are you sure you want to delete model '{name}' from the list?"):
@@ -406,14 +444,14 @@ SOFTWARE."""
     def _create_client(self):
         provider_name = self.api_provider_var.get()
         api_key = self._get_current_api_key()
-
+    
         if not provider_name:
             raise ValueError("API Provider must be selected.")
         if not api_key:
             raise ValueError("API Key is required.")
-
+    
         provider_config = self.settings['api_providers'][provider_name]
-
+    
         if provider_name == "Microsoft Azure":
             azure_endpoint = provider_config.get('azure_endpoint')
             api_version = provider_config.get('api_version')
@@ -429,13 +467,13 @@ SOFTWARE."""
             if not base_url:
                 raise ValueError(f"Base URL for '{provider_name}' is not configured.")
             return openai.OpenAI(api_key=api_key, base_url=base_url)
-
+    
     def _test_api_connection(self):
         model_name = self.model_name_var.get().strip()
         if not model_name:
             messagebox.showerror("Error", "Model Name is required for the test.", parent=self)
             return
-
+    
         self.test_api_button.config(state=tk.DISABLED)
         messagebox.showinfo("Testing", "Sending a test request... Please wait.", parent=self)
         threading.Thread(target=self._test_api_thread_task, args=(model_name,), daemon=True).start()
@@ -585,9 +623,9 @@ SOFTWARE."""
         try:
             model_name = self.model_name_var.get().strip()
             user_prompt_template = self.prompt_text.get("1.0", tk.END).strip()
-            context_before = self.context_before_var.get()
-            context_after = self.context_after_var.get()
-            max_tokens_value = self.max_tokens_var.get()
+            context_before = self.settings.get('context_before', 1)
+            context_after = self.settings.get('context_after', 1)
+            max_tokens_value = self.settings.get('max_tokens', 8000)
     
             client = self._create_client()
     
@@ -660,9 +698,6 @@ SOFTWARE."""
             if os.path.exists(RESUME_FILE):
                 os.remove(RESUME_FILE)
     
-            self.settings['max_tokens'] = self.max_tokens_var.get()
-            self.settings['context_before'] = self.context_before_var.get()
-            self.settings['context_after'] = self.context_after_var.get()
             save_settings(self.settings)
     
             self.after(0, self._update_status, "Processing complete! All files have been saved in their respective folders.", "green")

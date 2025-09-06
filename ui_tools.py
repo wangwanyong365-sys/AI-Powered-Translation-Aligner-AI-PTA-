@@ -98,7 +98,7 @@ class TermAnnotatorApp:
     def _setup_styles(self):
         self.style = ttk.Style(self.root)
         self.style.theme_use("clam")
-        self.title_font = ("Segoe UI", 12, "bold")
+        self.title_font = ("Segoe UI", 11, "bold")
         self.default_font = ("Segoe UI", 10)
         self.status_font = ("Segoe UI", 9)
         self.accent_font = ("Segoe UI", 11, "bold")
@@ -647,33 +647,12 @@ class PostEditingWindow(tk.Toplevel):
     
     def _post_editing_task(self, resume_data=None):
         try:
-            provider_name = self.parent.api_provider_var.get()
-            api_key = self.parent._get_current_api_key()
             model_name = self.parent.model_name_var.get().strip()
-            max_tokens = self.parent.max_tokens_var.get()
+            max_tokens = self.parent.settings.get('max_tokens', 8000)
             prompt_template = self.prompt_text.get("1.0", tk.END).strip()
             
-            if not api_key: raise ValueError("API Key is not set.")
-            if not model_name: raise ValueError("Model Name is not set.")
+            client = self.parent._create_client()
             
-            provider_config = self.parent.settings['api_providers'][provider_name]
-
-            if provider_name == "Microsoft Azure":
-                azure_endpoint = provider_config.get('azure_endpoint')
-                api_version = provider_config.get('api_version')
-                if not azure_endpoint or not api_version:
-                    raise ValueError("Azure Endpoint and API Version must be configured.")
-                client = openai.AzureOpenAI(
-                    api_key=api_key,
-                    azure_endpoint=azure_endpoint,
-                    api_version=api_version,
-                )
-            else:
-                base_url = provider_config.get('base_url')
-                if not base_url:
-                    raise ValueError(f"URL for provider '{provider_name}' not found.")
-                client = openai.OpenAI(api_key=api_key, base_url=base_url)
-
             file_path = self.source_file_path.get()
             
             self.after(0, self._update_status, f"Reading: {os.path.basename(file_path)}", "orange")
@@ -709,14 +688,15 @@ class PostEditingWindow(tk.Toplevel):
             
             self.after(0, self._update_status, "Saving output files...", "orange")
     
-            output_df = pd.DataFrame({'Source': df['Source'], 'Translation': df.iloc[:len(edited_paragraphs)]['Translation'], 'Post-edited': edited_paragraphs})
+            df['Post-edited'] = pd.Series(edited_paragraphs, index=df.index[start_row:start_row + len(edited_paragraphs)])
+            output_df = df
             base_name = os.path.splitext(os.path.basename(file_path))[0]
             output_dir = os.path.dirname(file_path)
     
             excel_path = os.path.join(output_dir, f"{base_name}_postedited.xlsx")
             output_df.to_excel(excel_path, index=False, engine='openpyxl')
             
-            full_edited_text = "\n\n".join(edited_paragraphs)
+            full_edited_text = "\n\n".join(output_df['Post-edited'].astype(str).tolist())
             txt_path = os.path.join(output_dir, f"{base_name}_postedited.txt")
             with open(txt_path, 'w', encoding='utf-8') as f: f.write(full_edited_text)
             

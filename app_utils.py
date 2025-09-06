@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import time
 import datetime
 import traceback
 import tkinter as tk
@@ -95,7 +96,7 @@ def load_settings():
                 else:
                     loaded_providers[p_name].setdefault(sub_key, sub_default)
         settings["api_providers"] = loaded_providers
-
+    
         settings.pop("api_keys", None)
         settings.pop("model_names", None)
             
@@ -118,26 +119,43 @@ def split_text_into_paragraphs(text):
     return [p.strip() for p in paragraphs if p.strip()]
 
 def translate_single_paragraph(client, model_name, full_prompt, max_tokens):
-    try:
-        lines = full_prompt.split('\n', 1)
-        system_message = lines[0]
-        user_message = lines[1] if len(lines) > 1 else ""
-        
+    last_exception = None
+    for attempt in range(10):
+        try:
+            lines = full_prompt.split('\n', 1)
+            system_message = lines[0]
+            user_message = lines[1] if len(lines) > 1 else ""
+            
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {"role": "system", "content": system_message},
+                    {"role": "user", "content": user_message},
+                ],
+                stream=False,
+                max_tokens=max_tokens
+            )
 
-        response = client.chat.completions.create(
-            model=model_name,
-            messages=[
-                {"role": "system", "content": system_message},
-                {"role": "user", "content": user_message},
-            ],
-            stream=False,
-            max_tokens=max_tokens
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        error_message = f"API call failed: {e}"
-        log_error(error_message)
-        return f"[Translation Failed: {str(e)[:50]}...]"
+            if response.choices:
+                choice = response.choices[0]
+                if choice.finish_reason == 'content_filter':
+                    raise Exception("API call failed due to content filtering on the response.")
+                
+                if choice.message and choice.message.content is not None:
+                    return choice.message.content.strip()
+                else:
+                    raise Exception("API returned an empty message content.")
+            else:
+                raise Exception("API response contained no choices.")
+
+        except Exception as e:
+            last_exception = e
+            error_message = f"API call attempt {attempt + 1}/10 failed: {e}"
+            log_error(error_message)
+            if attempt < 9:
+                time.sleep(2 ** attempt)  # Exponential backoff
+    
+    return f"[Translation Failed: {str(last_exception)[:100]}...]"
 
 def test_api_connection(client, model_name):
     try:
