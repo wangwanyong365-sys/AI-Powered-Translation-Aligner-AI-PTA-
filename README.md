@@ -2,6 +2,8 @@
 
 A comprehensive desktop application for AI-assisted translation and text processing with advanced post-editing capabilities.
 
+<img width="1802" height="1128" alt="image" src="https://github.com/user-attachments/assets/af71d061-9d5f-4d1c-9cf6-b1ac8ef500b3" />
+
 ## New Features in v0.14
 
 ### Enhanced Post-Editing Tool
@@ -11,16 +13,22 @@ A comprehensive desktop application for AI-assisted translation and text process
 - **Flexible Placeholders**: Use {source} and {target} placeholders for targeted editing instructions
 - **Resume Capability**: Automatic task resumption with progress tracking
 
+<img width="1052" height="948" alt="image" src="https://github.com/user-attachments/assets/fbddd68d-e4e1-4e53-93f0-435d8ad1757a" />
+
 ### Advanced Terminology Management
 - **Interactive Term Editor**: Add, modify, and delete terms with visual interface
 - **Real-time Annotation**: Automatically annotate source text with target terms
 - **CSV Terminology Support**: Import/export terminology lists in CSV format
 - **Term Highlighting**: Visual source text highlighting with target term annotations
 
+<img width="1502" height="1098" alt="image" src="https://github.com/user-attachments/assets/0cc3e1d0-4366-4039-af9f-c5eaf87f246b" />
+
 ### Microsoft Azure Integration
 - **Azure OpenAI Support**: Full integration with Microsoft Azure OpenAI services
 - **Custom Endpoint Configuration**: Support for custom Azure endpoints and API versions
 - **Secure Key Management**: Encrypted API key storage and management
+
+<img width="754" height="433" alt="image" src="https://github.com/user-attachments/assets/48b9cab2-de77-4738-9a63-90e9b46f7d89" />
 
 ### Enhanced API Management
 - **Multiple Provider Support**: DeepSeek, SiliconFlow, OpenAI, and Microsoft Azure
