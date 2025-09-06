@@ -49,11 +49,12 @@ def load_settings():
         },
         "post_editing_prompts": {
             "Default Post-editing Prompt": (
-                "You are a professional copyeditor. Your task is to polish the following text for clarity, fluency, and conciseness. "
+                "You are a professional copyeditor. Your task is to polish the following target text for clarity, fluency, and conciseness, using the source text as a reference. "
                 "Correct any grammatical errors, improve sentence structure, and ensure the tone is appropriate. "
-                "Preserve the original meaning and intent.\n\n"
-                "Directly output the edited text ONLY. Do not provide any explanations or annotations.\n\n"
-                "[Text to Edit]\n{paragraph}"
+                "Preserve the original meaning and intent as conveyed in the source text.\n\n"
+                "Directly output the edited target text ONLY. Do not provide any explanations or annotations.\n\n"
+                "[Source Text]\n{source}\n\n"
+                "[Target Text to Edit]\n{target}"
             )
         }
     }

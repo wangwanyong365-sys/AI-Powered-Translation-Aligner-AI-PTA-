@@ -1,5 +1,7 @@
 import os
 import csv
+import json
+import time
 import threading
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, simpledialog
@@ -9,6 +11,7 @@ import pandas as pd
 
 from app_utils import log_error, save_settings, split_text_into_paragraphs, translate_single_paragraph
 
+RESUME_PE_FILE = "resume_post_edit.json"
 
 class TermEditDialog(tk.Toplevel):
 
@@ -105,7 +108,7 @@ class TermAnnotatorApp:
         self.style.configure("TCombobox", font=self.default_font)
         self.style.configure("TLabelframe", font=self.default_font, padding=10)
         self.style.configure("TLabelframe.Label", font=self.title_font, foreground="#333")
-        self.style.configure("Accent.TButton", font=self.accent_font, padding=(10, 8), background="#0078D7", foreground="white")
+        self.style.configure("Accent.TButton", font=self.accent_font, padding=(10, 8))
         self.style.map("Accent.TButton", background=[("active", "#005a9e"), ("pressed", "#004578"), ("disabled", "#a0a0a0")])
         self.style.configure("Status.TLabel", font=self.status_font, padding=5)
         self.style.configure("Ready.Status.TLabel", foreground="gray")
@@ -438,7 +441,6 @@ class TermAnnotatorApp:
     def _on_closing(self):
         self.root.destroy()
 
-
 class PostEditingWindow(tk.Toplevel):
     def __init__(self, parent):
         super().__init__(parent)
@@ -448,13 +450,25 @@ class PostEditingWindow(tk.Toplevel):
         self.minsize(600, 500)
 
         self.source_file_path = tk.StringVar()
+        self.stop_requested = threading.Event()
+        self.is_processing = False
+        self.resume_data = None
+        self.timer_id = None
     
         self._setup_ui()
         self._post_ui_setup()
-        self.protocol("WM_DELETE_WINDOW", self.destroy)
+        self.protocol("WM_DELETE_WINDOW", self._on_closing)
         self.transient(parent)
         self.grab_set()
-    
+        self.after(100, self._check_for_resume_task)
+
+    def _on_closing(self):
+        if self.is_processing:
+            if not messagebox.askyesno("Confirm Exit", "A post-editing task is in progress. Exiting now will stop it. Are you sure?", parent=self):
+                return
+            self.stop_requested.set()
+        self.destroy()
+
     def _setup_ui(self):
         main_frame = ttk.Frame(self, padding="10")
         main_frame.pack(expand=True, fill=tk.BOTH)
@@ -497,12 +511,17 @@ class PostEditingWindow(tk.Toplevel):
         prompt_scrollbar.grid(row=1, column=1, sticky="ns")
         self.prompt_text.config(yscrollcommand=prompt_scrollbar.set)
     
-        self.start_button = ttk.Button(main_frame, text="Start Post-editing", style="Accent.TButton", command=self._start_post_editing)
-        self.start_button.grid(row=2, column=0, pady=10, ipady=5, sticky="ew")
+        self.process_button = ttk.Button(main_frame, text="Start Post-editing", style="Accent.TButton", command=self._start_post_editing)
+        self.process_button.grid(row=2, column=0, pady=10, ipady=5, sticky="ew")
     
-        self.status_label = ttk.Label(self, text="Ready", padding="5 2", anchor=tk.W)
-        self.status_label.pack(side=tk.BOTTOM, fill=tk.X)
-
+        status_frame = ttk.Frame(self)
+        status_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=5, pady=2)
+        self.status_label = ttk.Label(status_frame, text="Ready", anchor=tk.W)
+        self.status_label.pack(side=tk.LEFT, expand=True, fill=tk.X)
+        self.timer_label = ttk.Label(status_frame, text="", anchor=tk.E, width=10)
+        self.timer_label.pack(side=tk.RIGHT)
+        self._update_status("Ready", "gray")
+    
     def _post_ui_setup(self):
         self._update_prompt_combo()
         if self.parent.settings['post_editing_prompts']:
@@ -512,8 +531,8 @@ class PostEditingWindow(tk.Toplevel):
     
     def _browse_file(self):
         filepath = filedialog.askopenfilename(
-            title="Select the text file to post-edit",
-            filetypes=(("Text files", "*.txt"), ("All files", "*.*")),
+            title="Select the Excel file to post-edit",
+            filetypes=(("Excel files", "*.xlsx"), ("All files", "*.*")),
             parent=self
         )
         if filepath:
@@ -524,134 +543,172 @@ class PostEditingWindow(tk.Toplevel):
         self.status_label.config(text=text, foreground=color)
         self.update_idletasks()
 
+    def _update_timer(self, start_time):
+        elapsed = time.time() - start_time
+        mins, secs = divmod(elapsed, 60)
+        self.timer_label.config(text=f"{int(mins):02d}:{secs:04.1f}")
+        self.timer_id = self.after(100, self._update_timer, start_time)
+
+    def _cancel_timer(self):
+        if self.timer_id:
+            self.after_cancel(self.timer_id)
+            self.timer_id = None
+        self.timer_label.config(text="")
+    
     def _update_prompt_combo(self):
         self.prompt_combo['values'] = list(self.parent.settings['post_editing_prompts'].keys())
-
+    
     def _on_prompt_select(self, event=None):
         name = self.prompt_var.get()
         if name in self.parent.settings['post_editing_prompts']:
             self.prompt_text.delete("1.0", tk.END)
             self.prompt_text.insert("1.0", self.parent.settings['post_editing_prompts'][name])
-
+    
     def _add_prompt(self):
-        name = simpledialog.askstring("New Prompt", "Please enter the name for the new Post-editing Prompt:", parent=self)
+        name = simpledialog.askstring("New Prompt", "Enter name for the new Post-editing Prompt:", parent=self)
         if name and name.strip():
             name = name.strip()
             if name in self.parent.settings['post_editing_prompts']:
                 messagebox.showerror("Error", "This name already exists!", parent=self)
                 return
-            self.parent.settings['post_editing_prompts'][name] = f"This is the new prompt for '{name}'.\nPlease enter your instructions, using {{paragraph}} as a placeholder."
+            self.parent.settings['post_editing_prompts'][name] = "Enter instructions, using {source} and {target} placeholders."
             save_settings(self.parent.settings)
             self._update_prompt_combo()
             self.prompt_var.set(name)
             self._on_prompt_select()
-
+    
     def _save_current_prompt(self):
         name = self.prompt_var.get()
-        if not name:
-            messagebox.showerror("Error", "No prompt selected to save.", parent=self)
-            return
+        if not name: return messagebox.showerror("Error", "No prompt selected to save.", parent=self)
         content = self.prompt_text.get("1.0", tk.END).strip()
-        if "{paragraph}" not in content:
-            if not messagebox.askyesno("Warning", "The placeholder '{paragraph}' was not found.\nThis may cause the tool to fail.\n\nDo you still want to save?", parent=self):
+        if "{source}" not in content or "{target}" not in content:
+            if not messagebox.askyesno("Warning", "The placeholders {source} and {target} were not found. This may cause errors.\nDo you still want to save?", parent=self):
                 return
         self.parent.settings['post_editing_prompts'][name] = content
         save_settings(self.parent.settings)
         messagebox.showinfo("Success", f"Prompt '{name}' has been saved.", parent=self)
-
+    
     def _delete_prompt(self):
         name = self.prompt_var.get()
-        if not name:
-            messagebox.showerror("Error", "Please select a prompt to delete.", parent=self)
-            return
+        if not name: return messagebox.showerror("Error", "Please select a prompt to delete.", parent=self)
         if len(self.parent.settings['post_editing_prompts']) <= 1:
-            messagebox.showwarning("Warning", "You cannot delete the last prompt.", parent=self)
-            return
-        if messagebox.askyesno("Confirm Deletion", f"Are you sure you want to delete the prompt '{name}'?", parent=self):
+            return messagebox.showwarning("Warning", "You cannot delete the last prompt.", parent=self)
+        if messagebox.askyesno("Confirm Deletion", f"Are you sure you want to delete prompt '{name}'?", parent=self):
             del self.parent.settings['post_editing_prompts'][name]
             save_settings(self.parent.settings)
             self._update_prompt_combo()
             first_name = list(self.parent.settings['post_editing_prompts'].keys())[0]
             self.prompt_var.set(first_name)
             self._on_prompt_select()
-    
+
+    def _check_for_resume_task(self):
+        if os.path.exists(RESUME_PE_FILE):
+            try:
+                with open(RESUME_PE_FILE, 'r', encoding='utf-8') as f: data = json.load(f)
+                file_name = os.path.basename(data.get('current_file', ''))
+                row_index = data.get('last_row_index', -1)
+                if messagebox.askyesno("Unfinished Task", f"Found an unfinished post-editing task for '{file_name}' (stopped at row {row_index + 1}).\nResume?", parent=self):
+                    self._load_resume_state(data)
+                else:
+                    os.remove(RESUME_PE_FILE)
+            except Exception as e:
+                log_error(f"Failed to read post-edit resume file: {e}")
+                if os.path.exists(RESUME_PE_FILE): os.remove(RESUME_PE_FILE)
+
+    def _load_resume_state(self, data):
+        self.resume_data = data
+        self.source_file_path.set(data.get('current_file', ''))
+        self._update_status("Ready to resume. Click 'Start Post-editing'.", "blue")
+
+    def _save_resume_state(self, current_file, last_index, edited_paras):
+        state = {'current_file': current_file, 'last_row_index': last_index, 'edited_paragraphs': edited_paras}
+        try:
+            with open(RESUME_PE_FILE, 'w', encoding='utf-8') as f: json.dump(state, f, indent=4)
+        except Exception as e:
+            log_error(f"Failed to save post-edit resume state: {e}")
+
     def _start_post_editing(self):
-        if not self.source_file_path.get():
-            messagebox.showerror("Error", "Please select a TXT file first.", parent=self)
-            return
-        
-        prompt_content = self.prompt_text.get("1.0", tk.END).strip()
-        if not prompt_content:
-            messagebox.showerror("Error", "Prompt cannot be empty.", parent=self)
-            return
-            
-        if "{paragraph}" not in prompt_content:
-            messagebox.showerror("Error", "The prompt must contain the placeholder '{paragraph}'.", parent=self)
-            return
+        if not self.source_file_path.get(): return messagebox.showerror("Error", "Please select an Excel file.", parent=self)
+        prompt = self.prompt_text.get("1.0", tk.END).strip()
+        if not prompt: return messagebox.showerror("Error", "Prompt cannot be empty.", parent=self)
+        if "{source}" not in prompt or "{target}" not in prompt:
+            return messagebox.showerror("Error", "Prompt must contain {source} and {target} placeholders.", parent=self)
+
+        self.is_processing = True
+        self.stop_requested.clear()
+        self.process_button.config(text="Stop Processing", command=self._stop_post_editing, style="Stop.TButton")
+        self._update_status("Processing...", "orange")
+
+        threading.Thread(target=self._post_editing_task, args=(self.resume_data,), daemon=True).start()
+        self.resume_data = None
+
+    def _stop_post_editing(self):
+        self.stop_requested.set()
+        self._cancel_timer()
+        self._update_status("Stopping...", "orange")
     
-        self.start_button.config(state=tk.DISABLED)
-        self._update_status("Processing, please wait...", "orange")
-    
-        threading.Thread(target=self._post_editing_task, daemon=True).start()
-    
-    def _post_editing_task(self):
+    def _post_editing_task(self, resume_data=None):
         try:
             provider_name = self.parent.api_provider_var.get()
             api_key = self.parent._get_current_api_key()
             model_name = self.parent.model_name_var.get().strip()
             base_url = self.parent.settings['api_providers'].get(provider_name)
-            max_tokens_value = self.parent.max_tokens_var.get()
+            max_tokens = self.parent.max_tokens_var.get()
             prompt_template = self.prompt_text.get("1.0", tk.END).strip()
             
-            if not api_key:
-                raise ValueError("API Key is not set in the main window.")
-            if not base_url:
-                raise ValueError(f"Could not find URL for API Provider '{provider_name}'.")
-    
+            if not api_key: raise ValueError("API Key is not set.")
+            if not base_url: raise ValueError(f"URL for provider '{provider_name}' not found.")
+
             client = openai.OpenAI(api_key=api_key, base_url=base_url)
-    
             file_path = self.source_file_path.get()
-            file_name_base, file_ext = os.path.splitext(os.path.basename(file_path))
-            output_dir = os.path.dirname(file_path)
-    
+            
             self.after(0, self._update_status, f"Reading: {os.path.basename(file_path)}", "orange")
+            df = pd.read_excel(file_path)
             
-            with open(file_path, 'r', encoding='utf-8') as f:
-                original_text = f.read()
-            
-            paragraphs = split_text_into_paragraphs(original_text)
-            if not paragraphs:
-                log_error(f"File {os.path.basename(file_path)} is empty or has no paragraphs.")
-                self.after(0, self._update_status, "File is empty or contains no valid paragraphs.", "red")
-                return
-    
-            original_paragraphs = []
+            if 'Source' not in df.columns or 'Translation' not in df.columns:
+                raise ValueError("Excel file must contain 'Source' and 'Translation' columns.")
+
             edited_paragraphs = []
-            total_paragraphs = len(paragraphs)
-    
-            for i, para in enumerate(paragraphs):
-                self.after(0, self._update_status, f"Editing paragraph {i+1}/{total_paragraphs}", "orange")
+            total_rows = len(df)
+            start_row = 0
+            if resume_data and file_path == resume_data.get('current_file'):
+                start_row = resume_data.get('last_row_index', -1) + 1
+                edited_paragraphs = resume_data.get('edited_paragraphs', [])
+
+            for i, row in df.iloc[start_row:].iterrows():
+                if self.stop_requested.is_set():
+                    self._save_resume_state(file_path, i - 1, edited_paragraphs)
+                    self.after(0, self._update_status, f"Stopped. Progress for '{os.path.basename(file_path)}' saved.", "blue")
+                    return
+
+                self.after(0, self._update_status, f"Editing row {i + 1}/{total_rows}", "orange")
+                start_time = time.time()
+                self.after(0, self._update_timer, start_time)
+
+                source_text, target_text = str(row['Source']), str(row['Translation'])
+                full_prompt = prompt_template.format(source=source_text, target=target_text)
                 
-                full_prompt = prompt_template.replace("{paragraph}", para)
+                edited_para = translate_single_paragraph(client, model_name, full_prompt, max_tokens)
                 
-                edited_para = translate_single_paragraph(client, model_name, full_prompt, max_tokens_value)
-                
-                original_paragraphs.append(para)
+                self.after(0, self._cancel_timer)
                 edited_paragraphs.append(edited_para)
             
             self.after(0, self._update_status, "Saving output files...", "orange")
-    
+
+            output_df = pd.DataFrame({'Source': df['Source'], 'Translation': edited_paragraphs})
+            base_name = os.path.splitext(os.path.basename(file_path))[0]
+            output_dir = os.path.dirname(file_path)
+
+            excel_path = os.path.join(output_dir, f"{base_name}_postedited.xlsx")
+            output_df.to_excel(excel_path, index=False, engine='openpyxl')
+            
             full_edited_text = "\n\n".join(edited_paragraphs)
-            edited_txt_path = os.path.join(output_dir, f"{file_name_base}_edited.txt")
-            with open(edited_txt_path, 'w', encoding='utf-8') as f:
-                f.write(full_edited_text)
+            txt_path = os.path.join(output_dir, f"{base_name}_postedited.txt")
+            with open(txt_path, 'w', encoding='utf-8') as f: f.write(full_edited_text)
             
-            df = pd.DataFrame({'Before': original_paragraphs, 'After': edited_paragraphs})
-            excel_path = os.path.join(output_dir, f"{file_name_base}_comparison.xlsx")
-            df.to_excel(excel_path, index=False, engine='openpyxl')
-            
+            if os.path.exists(RESUME_PE_FILE): os.remove(RESUME_PE_FILE)
             self.after(0, self._update_status, "Post-editing complete! Files saved.", "green")
-    
+
         except Exception as e:
             error_message = f"Processing failed: {e}"
             log_error(f"Post-editing task failed. Error: {e}")
@@ -659,4 +716,6 @@ class PostEditingWindow(tk.Toplevel):
             self.after(0, messagebox.showerror, "An Error Occurred", f"{e}\n\nDetails logged to error_log.txt", parent=self)
         
         finally:
-            self.after(0, lambda: self.start_button.config(state=tk.NORMAL))
+            self.is_processing = False
+            self.after(0, lambda: self.process_button.config(text="Start Post-editing", command=self._start_post_editing, style="Accent.TButton"))
+            self.after(0, self._cancel_timer)

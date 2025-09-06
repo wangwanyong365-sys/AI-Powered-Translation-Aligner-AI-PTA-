@@ -1,4 +1,6 @@
 import os
+import json
+import time
 import threading
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, simpledialog, scrolledtext
@@ -9,6 +11,7 @@ import pandas as pd
 from app_utils import load_settings, save_settings, log_error, split_text_into_paragraphs, translate_single_paragraph
 from ui_tools import TermAnnotatorApp, PostEditingWindow
 
+RESUME_FILE = "resume_info.json"
 
 class TranslationApp(tk.Tk):
     def __init__(self):
@@ -17,14 +20,25 @@ class TranslationApp(tk.Tk):
         self.selected_files = []
         self.annotator_window = None
         self.post_editor_window = None
-    
+        
+        self.stop_requested = threading.Event()
+        self.is_processing = False
+        self.resume_data = None
+        self.timer_id = None
+        
         self._setup_style()
         self._setup_ui()
         self._post_ui_setup()
         
         self.protocol("WM_DELETE_WINDOW", self._on_closing)
-    
+        self.after(100, self._check_for_resume_task)
+
     def _on_closing(self):
+        if self.is_processing:
+            if not messagebox.askyesno("Confirm Exit", "A translation task is currently in progress. Exiting now will stop it. Are you sure you want to exit?"):
+                return
+            self.stop_requested.set()
+        
         self.settings['max_tokens'] = self.max_tokens_var.get()
         self.settings['context_before'] = self.context_before_var.get()
         self.settings['context_after'] = self.context_after_var.get()
@@ -36,10 +50,12 @@ class TranslationApp(tk.Tk):
         self.style.theme_use("clam")
         self.style.configure("Accent.TButton", font=("Segoe UI", 12, "bold"), padding=(10, 5))
         self.style.map("Accent.TButton", background=[("active", "#005f9e"), ("!disabled", "#0078d4")], foreground=[("!disabled", "white")])
+        self.style.configure("Stop.TButton", font=("Segoe UI", 12, "bold"), padding=(10, 5))
+        self.style.map("Stop.TButton", background=[("active", "#c42b1c"), ("!disabled", "#d13438")], foreground=[("!disabled", "white")])
         self.style.configure("TLabelFrame.Label", font=("Segoe UI", 11, "bold"))
     
     def _setup_ui(self):
-        self.title("AI-Powered Translation Aligner (AI-PTA) v0.9")
+        self.title("AI-Powered Translation Aligner (AI-PTA) v0.10")
         self.geometry("800x850") 
         self.minsize(600, 700)
     
@@ -151,13 +167,17 @@ class TranslationApp(tk.Tk):
         prompt_scrollbar.grid(row=1, column=1, sticky="ns")
         self.prompt_text.config(yscrollcommand=prompt_scrollbar.set)
     
-        self.start_button = ttk.Button(main_frame, text="Start Processing", style="Accent.TButton", command=self._start_processing)
-        self.start_button.grid(row=3, column=0, pady=10, ipady=5, sticky="ew")
+        self.process_button = ttk.Button(main_frame, text="Start Processing", style="Accent.TButton", command=self._start_processing)
+        self.process_button.grid(row=3, column=0, pady=10, ipady=5, sticky="ew")
         
-        self.status_label = ttk.Label(self, text="Ready", padding="5 2", anchor=tk.W)
-        self.status_label.pack(side=tk.BOTTOM, fill=tk.X)
+        status_frame = ttk.Frame(self)
+        status_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=5, pady=2)
+        self.status_label = ttk.Label(status_frame, text="Ready", anchor=tk.W)
+        self.status_label.pack(side=tk.LEFT, expand=True, fill=tk.X)
+        self.timer_label = ttk.Label(status_frame, text="", anchor=tk.E, width=10)
+        self.timer_label.pack(side=tk.RIGHT)
         self._update_status("Ready", "gray")
-    
+
     def _open_annotator(self):
         if self.annotator_window and self.annotator_window.winfo_exists():
             self.annotator_window.lift()
@@ -397,24 +417,85 @@ SOFTWARE."""
         self.status_label.config(text=text, foreground=color)
         self.update_idletasks()
     
+    def _update_timer(self, start_time):
+        elapsed = time.time() - start_time
+        mins, secs = divmod(elapsed, 60)
+        self.timer_label.config(text=f"{int(mins):02d}:{secs:04.1f}")
+        self.timer_id = self.after(100, self._update_timer, start_time)
+
+    def _cancel_timer(self):
+        if self.timer_id:
+            self.after_cancel(self.timer_id)
+            self.timer_id = None
+        self.timer_label.config(text="")
+
+    def _check_for_resume_task(self):
+        if os.path.exists(RESUME_FILE):
+            try:
+                with open(RESUME_FILE, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                
+                file_name = os.path.basename(data.get('current_file', 'unknown file'))
+                paragraph_index = data.get('last_paragraph_index', -1)
+                
+                if messagebox.askyesno("Unfinished Task Found", 
+                                       f"An unfinished task for '{file_name}' (stopped at paragraph {paragraph_index + 1}) was found.\n\nDo you want to resume?"):
+                    self._load_resume_state(data)
+                else:
+                    os.remove(RESUME_FILE)
+            except Exception as e:
+                log_error(f"Failed to read resume file: {e}")
+                os.remove(RESUME_FILE)
+
+    def _load_resume_state(self, data):
+        self.resume_data = data
+        self.selected_files = data.get('all_files', [])
+        self.file_listbox.delete(0, tk.END)
+        for f in self.selected_files:
+            self.file_listbox.insert(tk.END, os.path.basename(f))
+        
+        self._update_status(f"Ready to resume. {len(self.selected_files)} files loaded.", "blue")
+        messagebox.showinfo("Resume Ready", "The previous task has been loaded. Click 'Start Processing' to continue.")
+
+    def _save_resume_state(self, current_file, last_index, translated_paras, all_files):
+        state = {
+            'current_file': current_file,
+            'last_paragraph_index': last_index,
+            'translated_paragraphs': translated_paras,
+            'all_files': all_files
+        }
+        try:
+            with open(RESUME_FILE, 'w', encoding='utf-8') as f:
+                json.dump(state, f, indent=4)
+        except Exception as e:
+            log_error(f"Failed to save resume state: {e}")
+    
     def _start_processing(self):
         if not self.selected_files: return messagebox.showerror("Error", "Please select TXT files first.")
         if not self._get_current_api_key(): return messagebox.showerror("Error", "API Key cannot be empty.")
         if not self.prompt_text.get("1.0", tk.END).strip(): return messagebox.showerror("Error", "Prompt content cannot be empty.")
     
-        self.start_button.config(state=tk.DISABLED)
+        self.is_processing = True
+        self.stop_requested.clear()
+        self.process_button.config(text="Stop Processing", command=self._stop_processing, style="Stop.TButton")
         self._update_status("Processing, please wait...", "orange")
     
-        threading.Thread(target=self._processing_task, daemon=True).start()
-    
-    def _processing_task(self):
+        threading.Thread(target=self._processing_task, args=(self.resume_data,), daemon=True).start()
+        self.resume_data = None
+
+    def _stop_processing(self):
+        self.stop_requested.set()
+        self._cancel_timer()
+        self._update_status("Stopping...", "orange")
+
+    def _processing_task(self, resume_data=None):
         try:
             provider_name = self.api_provider_var.get()
             api_key = self._get_current_api_key()
             model_name = self.model_name_var.get().strip() or "deepseek-chat"
             base_url = self.settings['api_providers'].get(provider_name)
             if not base_url:
-                self.after(0, messagebox.showerror, "Error", f"Could not find the URL for API Provider '{provider_name}'.\nPlease check your settings.")
+                self.after(0, messagebox.showerror, "Error", f"Could not find the URL for API Provider '{provider_name}'.")
                 raise ValueError(f"Provider URL not found for '{provider_name}'")
             user_prompt_template = self.prompt_text.get("1.0", tk.END).strip()
             context_before = self.context_before_var.get()
@@ -424,7 +505,15 @@ SOFTWARE."""
             client = openai.OpenAI(api_key=api_key, base_url=base_url)
     
             total_files = len(self.selected_files)
-            for i, file_path in enumerate(self.selected_files):
+            start_file_index = 0
+            if resume_data:
+                try:
+                    start_file_index = self.selected_files.index(resume_data.get('current_file'))
+                except ValueError:
+                    log_error(f"Resumed file '{resume_data.get('current_file')}' not found in selection.")
+
+            for i in range(start_file_index, total_files):
+                file_path = self.selected_files[i]
                 file_name = os.path.basename(file_path)
                 dir_name = os.path.splitext(file_name)[0]
                 output_dir = os.path.join(os.path.dirname(file_path), dir_name)
@@ -440,23 +529,37 @@ SOFTWARE."""
                     continue
     
                 translated_paragraphs, total_paragraphs = [], len(paragraphs)
+                start_paragraph_index = 0
+
+                if resume_data and file_path == resume_data.get('current_file'):
+                    start_paragraph_index = resume_data.get('last_paragraph_index', -1) + 1
+                    translated_paragraphs = resume_data.get('translated_paragraphs', [])
+                    resume_data = None
                 
-                for j, para in enumerate(paragraphs):
+                for j in range(start_paragraph_index, total_paragraphs):
+                    if self.stop_requested.is_set():
+                        self._save_resume_state(file_path, j - 1, translated_paragraphs, self.selected_files)
+                        self.after(0, self._update_status, f"Processing stopped. Progress for '{file_name}' saved.", "blue")
+                        return
+
                     self.after(0, self._update_status, f"[{i+1}/{total_files}] Translating {file_name} paragraph ({j+1}/{total_paragraphs})", "orange")
                     
+                    start_time = time.time()
+                    self.after(0, self._update_timer, start_time)
+
                     context_parts = []
                     start = max(0, j - context_before)
-                    if start < j:
-                        context_parts.extend(["[Previous Context]"] + paragraphs[start:j] + [""])
+                    if start < j: context_parts.extend(["[Previous Context]"] + paragraphs[start:j] + [""])
                     
-                    context_parts.extend(["[Text to Translate]", para])
+                    context_parts.extend(["[Text to Translate]", paragraphs[j]])
                     
                     end = min(total_paragraphs, j + 1 + context_after)
-                    if j + 1 < end:
-                        context_parts.extend(["\n[Next Context]"] + paragraphs[j+1:end])
+                    if j + 1 < end: context_parts.extend(["\n[Next Context]"] + paragraphs[j+1:end])
     
                     full_prompt = user_prompt_template.format(context="\n".join(context_parts))
                     translated_para = translate_single_paragraph(client, model_name, full_prompt, max_tokens_value)
+                    
+                    self.after(0, self._cancel_timer)
                     translated_paragraphs.append(translated_para)
     
                 full_translated_text = "\n\n".join(translated_paragraphs)
@@ -467,6 +570,9 @@ SOFTWARE."""
                 df = pd.DataFrame({'Source': paragraphs, 'Translation': translated_paragraphs})
                 df.to_excel(os.path.join(output_dir, f"{dir_name}_corpus.xlsx"), index=False, engine='openpyxl')
     
+            if os.path.exists(RESUME_FILE):
+                os.remove(RESUME_FILE)
+
             self.settings['max_tokens'] = self.max_tokens_var.get()
             self.settings['context_before'] = self.context_before_var.get()
             self.settings['context_after'] = self.context_after_var.get()
@@ -481,7 +587,9 @@ SOFTWARE."""
             self.after(0, messagebox.showerror, "An Error Occurred", f"{e}\n\nDetailed information has been logged to error_log.txt")
         
         finally:
-            self.after(0, lambda: self.start_button.config(state=tk.NORMAL))
+            self.is_processing = False
+            self.after(0, lambda: self.process_button.config(text="Start Processing", command=self._start_processing, style="Accent.TButton"))
+            self.after(0, self._cancel_timer)
 
 if __name__ == "__main__":
     app = TranslationApp()
