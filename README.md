@@ -4,9 +4,9 @@ A comprehensive desktop application for AI-assisted translation and text process
 
 <img width="1802" height="1128" alt="image" src="https://github.com/user-attachments/assets/5154b947-ecda-42e2-a3eb-777c26f4bc2f" />
 
-<img width="518" height="420" alt="image" src="https://github.com/user-attachments/assets/29cbfab4-d3a1-4771-9c8c-dc2ac99dcfe3" />
-
 ## New Features in v0.15
+
+<img width="518" height="420" alt="image" src="https://github.com/user-attachments/assets/29cbfab4-d3a1-4771-9c8c-dc2ac99dcfe3" />
 
 ### API Connection Testing
 - **Built-in API Testing**: Test API connections directly from the main interface
