@@ -95,31 +95,30 @@ class TermAnnotatorApp:
         self.root.title("Source Text Term Annotator")
         self.root.geometry("1000x700")
         self.root.minsize(800, 600)
+        self.root.columnconfigure(0, weight=1)
+        self.root.rowconfigure(0, weight=1)
         self.root.protocol("WM_DELETE_WINDOW", self._on_closing)
     
     def _setup_styles(self):
         self.style = ttk.Style(self.root)
         self.style.theme_use("clam")
-        self.title_font = ("Segoe UI", 11, "bold")
-        self.default_font = ("Segoe UI", 10)
-        self.status_font = ("Segoe UI", 9)
-        self.accent_font = ("Segoe UI", 11, "bold")
-        self.style.configure("TLabel", font=self.default_font)
-        self.style.configure("TButton", font=self.default_font, padding=5)
-        self.style.configure("TEntry", font=self.default_font)
-        self.style.configure("TCombobox", font=self.default_font)
-        self.style.configure("TLabelframe", font=self.default_font, padding=10)
-        self.style.configure("TLabelframe.Label", font=self.title_font, foreground="#333")
-        self.style.configure("Status.TLabel", font=self.status_font, padding=5)
-        self.style.configure("Ready.Status.TLabel", foreground="gray")
-        self.style.configure("Info.Status.TLabel", foreground="blue")
-        self.style.configure("Processing.Status.TLabel", foreground="orange")
-        self.style.configure("Success.Status.TLabel", foreground="green")
-        self.style.configure("Error.Status.TLabel", foreground="red")
+        
+        default_font = ("Segoe UI", 10)
+        self.style.configure("TLabel", font=default_font)
+        self.style.configure("TButton", font=default_font, padding=5)
+        self.style.configure("TEntry", font=default_font)
+        self.style.configure("TCombobox", font=default_font)
+        
+        self.style.configure("TLabelframe.Label", font=("Segoe UI", 12, "bold"))
+        
+        self.style.configure("Accent.TButton", font=("Segoe UI", 10, "bold"), padding=8)
+        self.style.map("Accent.TButton",
+                       background=[("active", "#0078D7")],
+                       foreground=[("active", "white")])
     
     def _create_widgets(self):
-        main_frame = ttk.Frame(self.root, padding=10)
-        main_frame.pack(expand=True, fill=tk.BOTH)
+        main_frame = ttk.Frame(self.root, padding=15)
+        main_frame.grid(row=0, column=0, sticky="nsew")
         main_frame.rowconfigure(1, weight=1)
         main_frame.columnconfigure(0, weight=1)
     
@@ -134,21 +133,20 @@ class TermAnnotatorApp:
         bottom_frame.columnconfigure(0, weight=1)
     
         self.annotate_button = ttk.Button(
-            bottom_frame, text="Start Annotation", command=self._start_annotation
+            bottom_frame, text="Start Annotation", command=self._start_annotation, style="Accent.TButton"
         )
         self.annotate_button.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E))
     
-        self.status_label = ttk.Label(
-            main_frame, text="Ready", anchor=tk.W, style="Ready.Status.TLabel"
-        )
-        self.status_label.grid(row=3, column=0, sticky=(tk.W, tk.E), pady=(10, 0))
+        self.status_label = ttk.Label(self.root, text="Ready", relief=tk.SUNKEN, anchor=tk.W, padding=5)
+        self.status_label.grid(row=1, column=0, sticky="ew")
+        self._update_status("Ready", "gray")
     
     def _create_top_controls(self, parent):
         frame = ttk.LabelFrame(parent, text="Settings")
         frame.columnconfigure(1, weight=1)
     
         ttk.Label(frame, text="Select Terminology:").grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
-        self.term_db_combo = ttk.Combobox(frame, state="readonly", font=self.default_font)
+        self.term_db_combo = ttk.Combobox(frame, state="readonly")
         self.term_db_combo.grid(row=0, column=1, padx=5, pady=5, sticky=(tk.W, tk.E))
         self.term_db_combo.bind("<<ComboboxSelected>>", self._on_term_db_selected)
     
@@ -158,7 +156,7 @@ class TermAnnotatorApp:
         term_list_frame.rowconfigure(0, weight=1)
         term_list_frame.columnconfigure(0, weight=1)
         
-        self.term_listbox = tk.Listbox(term_list_frame, font=self.default_font, height=5)
+        self.term_listbox = tk.Listbox(term_list_frame, font=("Segoe UI", 10), height=5)
         self.term_listbox.grid(row=0, column=0, sticky="nsew")
         
         scrollbar = ttk.Scrollbar(term_list_frame, orient=tk.VERTICAL, command=self.term_listbox.yview)
@@ -190,25 +188,25 @@ class TermAnnotatorApp:
         frame.columnconfigure(0, weight=1)
         frame.columnconfigure(1, weight=1)
     
-        ttk.Label(frame, text="Source Text", font=self.title_font).grid(row=0, column=0, padx=5, pady=5)
+        ttk.Label(frame, text="Source Text").grid(row=0, column=0, padx=5, pady=5)
         source_text_frame = ttk.Frame(frame)
         source_text_frame.grid(row=1, column=0, sticky="nsew", padx=(0, 5))
         source_text_frame.rowconfigure(0, weight=1)
         source_text_frame.columnconfigure(0, weight=1)
         
-        self.source_text = tk.Text(source_text_frame, wrap=tk.WORD, font=self.default_font, undo=True)
+        self.source_text = tk.Text(source_text_frame, wrap=tk.WORD, font=("Segoe UI", 10), undo=True)
         self.source_text.grid(row=0, column=0, sticky="nsew")
         source_scrollbar = ttk.Scrollbar(source_text_frame, orient=tk.VERTICAL, command=self.source_text.yview)
         source_scrollbar.grid(row=0, column=1, sticky="ns")
         self.source_text.config(yscrollcommand=source_scrollbar.set)
     
-        ttk.Label(frame, text="Annotated Text", font=self.title_font).grid(row=0, column=1, padx=5, pady=5)
+        ttk.Label(frame, text="Annotated Text").grid(row=0, column=1, padx=5, pady=5)
         annotated_text_frame = ttk.Frame(frame)
         annotated_text_frame.grid(row=1, column=1, sticky="nsew", padx=(5, 0))
         annotated_text_frame.rowconfigure(0, weight=1)
         annotated_text_frame.columnconfigure(0, weight=1)
     
-        self.annotated_text = tk.Text(annotated_text_frame, wrap=tk.WORD, font=self.default_font, undo=True, state=tk.DISABLED)
+        self.annotated_text = tk.Text(annotated_text_frame, wrap=tk.WORD, font=("Segoe UI", 10), undo=True, state=tk.DISABLED)
         self.annotated_text.grid(row=0, column=0, sticky="nsew")
         annotated_scrollbar = ttk.Scrollbar(annotated_text_frame, orient=tk.VERTICAL, command=self.annotated_text.yview)
         annotated_scrollbar.grid(row=0, column=1, sticky="ns")
@@ -219,13 +217,8 @@ class TermAnnotatorApp:
     
         return frame
     
-    def _update_status(self, text, level="info"):
-        style_map = {
-            "ready": "Ready.Status.TLabel", "info": "Info.Status.TLabel",
-            "processing": "Processing.Status.TLabel", "success": "Success.Status.TLabel",
-            "error": "Error.Status.TLabel"
-        }
-        self.status_label.config(text=text, style=style_map.get(level.lower(), "Info.Status.TLabel"))
+    def _update_status(self, text, color="black"):
+        self.status_label.config(text=text, foreground=color)
         self.root.update_idletasks()
     
     def _load_terminologies(self):
@@ -233,7 +226,7 @@ class TermAnnotatorApp:
         if not os.path.exists(term_dir):
             os.makedirs(term_dir)
             messagebox.showinfo("Info", f"The 'terminology' folder has been created.\nPlease put your CSV terminology files in it.", parent=self.root)
-            self._update_status("Terminology folder created. Please add files.", level="info")
+            self._update_status("Terminology folder created. Please add files.", "blue")
             return
     
         try:
@@ -242,12 +235,12 @@ class TermAnnotatorApp:
             if csv_files:
                 self.term_db_combo.current(0)
                 self._on_term_db_selected(None)
-                self._update_status(f"Loaded {len(csv_files)} terminologies.", level="info")
+                self._update_status(f"Loaded {len(csv_files)} terminologies.", "green")
             else:
-                self._update_status("No .csv files found in the 'terminology' folder.", level="error")
+                self._update_status("No .csv files found in the 'terminology' folder.", "orange")
         except Exception as e:
             messagebox.showerror("Error", f"Error loading terminologies: {e}", parent=self.root)
-            self._update_status(f"Failed to load terminologies: {e}", level="error")
+            self._update_status(f"Failed to load terminologies: {e}", "red")
     
     def _on_term_db_selected(self, event):
         filename = self.term_db_combo.get()
@@ -267,15 +260,15 @@ class TermAnnotatorApp:
                     else:
                         print(f"Warning: Skipping invalid row {i+1} in file '{filename}': {row}")
             self._update_term_listbox()
-            self._update_status(f"Successfully loaded terminology '{filename}' with {len(self.current_terms)} terms.", level="success")
+            self._update_status(f"Successfully loaded '{filename}' with {len(self.current_terms)} terms.", "green")
             for btn in [self.add_term_button, self.modify_term_button, self.delete_term_button]:
                 btn.config(state=tk.NORMAL)
         except FileNotFoundError:
             messagebox.showerror("Error", f"File '{filename}' not found.", parent=self.root)
-            self._update_status(f"File not found: {filename}", level="error")
+            self._update_status(f"File not found: {filename}", "red")
         except Exception as e:
             messagebox.showerror("Error", f"Error reading file '{filename}': {e}", parent=self.root)
-            self._update_status(f"Failed to read file '{filename}'", level="error")
+            self._update_status(f"Failed to read file '{filename}'", "red")
     
     def _update_term_listbox(self):
         self.term_listbox.delete(0, tk.END)
@@ -285,7 +278,7 @@ class TermAnnotatorApp:
     def _save_current_terms(self):
         filename = self.term_db_combo.get()
         if not filename:
-            self._update_status("Error: No terminology file selected for saving.", level="error")
+            self._update_status("Error: No terminology file selected for saving.", "red")
             return False
         
         filepath = os.path.join("terminology", filename)
@@ -294,11 +287,11 @@ class TermAnnotatorApp:
                 writer = csv.writer(f)
                 for source, target in sorted(self.current_terms.items()):
                     writer.writerow([source, target])
-            self._update_status(f"Terminology '{filename}' saved automatically.", level="success")
+            self._update_status(f"Terminology '{filename}' saved automatically.", "green")
             return True
         except Exception as e:
             messagebox.showerror("Save Failed", f"Could not save terminology '{filename}':\n{e}", parent=self.root)
-            self._update_status(f"Failed to save terminology: {e}", level="error")
+            self._update_status(f"Failed to save terminology: {e}", "red")
             return False
     
     def _add_term(self):
@@ -312,7 +305,7 @@ class TermAnnotatorApp:
             self.current_terms[source] = target
             if self._save_current_terms():
                 self._update_term_listbox()
-                self._update_status(f"Added term: {source} → {target}", level="success")
+                self._update_status(f"Added term: {source} → {target}", "green")
     
     def _modify_term(self):
         selected_indices = self.term_listbox.curselection()
@@ -335,7 +328,7 @@ class TermAnnotatorApp:
             
             if self._save_current_terms():
                 self._update_term_listbox()
-                self._update_status(f"Modified term: {new_source} → {new_target}", level="success")
+                self._update_status(f"Modified term: {new_source} → {new_target}", "green")
             else:
                 del self.current_terms[new_source]
                 self.current_terms[old_source] = old_target
@@ -354,7 +347,7 @@ class TermAnnotatorApp:
                     del self.current_terms[source_to_delete]
                     if self._save_current_terms():
                         self._update_term_listbox()
-                        self._update_status(f"Deleted term: {source_to_delete}", level="success")
+                        self._update_status(f"Deleted term: {source_to_delete}", "green")
             except Exception as e:
                 messagebox.showerror("Deletion Failed", f"An error occurred during deletion: {e}", parent=self.root)
     
@@ -370,10 +363,10 @@ class TermAnnotatorApp:
                 with open(filepath, 'r', encoding='utf-8') as f:
                     self.source_text.delete("1.0", tk.END)
                     self.source_text.insert("1.0", f.read())
-                self._update_status(f"Loaded source file: {os.path.basename(filepath)}", level="info")
+                self._update_status(f"Loaded source file: {os.path.basename(filepath)}", "blue")
             except Exception as e:
                 messagebox.showerror("File Read Error", f"Could not read file: {e}", parent=self.root)
-                self._update_status(f"File read failed: {e}", level="error")
+                self._update_status(f"File read failed: {e}", "red")
     
     def _export_annotated_text(self):
         content = self.annotated_text.get("1.0", tk.END).strip()
@@ -399,10 +392,10 @@ class TermAnnotatorApp:
             try:
                 with open(filepath, 'w', encoding='utf-8') as f:
                     f.write(content)
-                self._update_status(f"File successfully exported to: {os.path.basename(filepath)}", level="success")
+                self._update_status(f"File successfully exported to: {os.path.basename(filepath)}", "green")
             except Exception as e:
                 messagebox.showerror("Export Failed", f"Could not write to file: {e}", parent=self.root)
-                self._update_status(f"File export failed: {e}", level="error")
+                self._update_status(f"File export failed: {e}", "red")
     
     def _perform_annotation(self, source_text, term_dict):
         sorted_terms = sorted(term_dict.keys(), key=len, reverse=True)
@@ -423,7 +416,7 @@ class TermAnnotatorApp:
             return
     
         self.annotate_button.config(state=tk.DISABLED)
-        self._update_status("Annotating, please wait...", level="processing")
+        self._update_status("Annotating, please wait...", "orange")
         
         try:
             result = self._perform_annotation(source_text, self.current_terms)
@@ -431,9 +424,9 @@ class TermAnnotatorApp:
             self.annotated_text.delete("1.0", tk.END)
             self.annotated_text.insert("1.0", result)
             self.annotated_text.config(state=tk.DISABLED)
-            self._update_status("Annotation complete!", level="success")
+            self._update_status("Annotation complete!", "green")
         except Exception as e:
-            self._update_status(f"An error occurred during annotation: {e}", level="error")
+            self._update_status(f"An error occurred during annotation: {e}", "red")
             messagebox.showerror("Annotation Failed", f"An unknown error occurred: {e}", parent=self.root)
         finally:
             self.annotate_button.config(state=tk.NORMAL)
@@ -448,6 +441,8 @@ class PostEditingWindow(tk.Toplevel):
         self.title("Post-editing Tool")
         self.geometry("700x600")
         self.minsize(600, 500)
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
 
         self.source_file_path = tk.StringVar()
         self.stop_requested = threading.Event()
@@ -455,6 +450,7 @@ class PostEditingWindow(tk.Toplevel):
         self.resume_data = None
         self.timer_id = None
     
+        self._setup_style()
         self._setup_ui()
         self._post_ui_setup()
         self.protocol("WM_DELETE_WINDOW", self._on_closing)
@@ -468,10 +464,26 @@ class PostEditingWindow(tk.Toplevel):
                 return
             self.stop_requested.set()
         self.destroy()
+
+    def _setup_style(self):
+        self.style = ttk.Style(self)
+        self.style.theme_use("clam")
+        
+        default_font = ("Segoe UI", 10)
+        self.style.configure("TLabel", font=default_font)
+        self.style.configure("TButton", font=default_font, padding=5)
+        self.style.configure("TEntry", font=default_font)
+        
+        self.style.configure("TLabelframe.Label", font=("Segoe UI", 12, "bold"))
+        
+        self.style.configure("Accent.TButton", font=("Segoe UI", 10, "bold"), padding=8)
+        self.style.map("Accent.TButton",
+                       background=[("active", "#0078D7")],
+                       foreground=[("active", "white")])
     
     def _setup_ui(self):
-        main_frame = ttk.Frame(self, padding="10")
-        main_frame.pack(expand=True, fill=tk.BOTH)
+        main_frame = ttk.Frame(self, padding="15")
+        main_frame.grid(row=0, column=0, sticky="nsew")
         main_frame.rowconfigure(1, weight=1)
         main_frame.columnconfigure(0, weight=1)
     
@@ -511,14 +523,14 @@ class PostEditingWindow(tk.Toplevel):
         prompt_scrollbar.grid(row=1, column=1, sticky="ns")
         self.prompt_text.config(yscrollcommand=prompt_scrollbar.set)
     
-        self.process_button = ttk.Button(main_frame, text="Start Post-editing", command=self._start_post_editing)
+        self.process_button = ttk.Button(main_frame, text="Start Post-editing", command=self._start_post_editing, style="Accent.TButton")
         self.process_button.grid(row=2, column=0, pady=10, sticky="ew")
     
-        status_frame = ttk.Frame(self)
-        status_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=5, pady=2)
-        self.status_label = ttk.Label(status_frame, text="Ready", anchor=tk.W)
+        status_bar = ttk.Frame(self)
+        status_bar.grid(row=1, column=0, sticky="ew")
+        self.status_label = ttk.Label(status_bar, text="Ready", relief=tk.SUNKEN, anchor=tk.W, padding=5)
         self.status_label.pack(side=tk.LEFT, expand=True, fill=tk.X)
-        self.timer_label = ttk.Label(status_frame, text="", anchor=tk.E, width=10)
+        self.timer_label = ttk.Label(status_bar, text="", relief=tk.SUNKEN, anchor=tk.E, padding=5)
         self.timer_label.pack(side=tk.RIGHT)
         self._update_status("Ready", "gray")
     
@@ -652,6 +664,7 @@ class PostEditingWindow(tk.Toplevel):
             model_name = self.parent.model_name_var.get().strip()
             max_tokens = self.parent.settings.get('max_tokens', 8000)
             retry_attempts = self.parent.settings.get('retry_attempts', 3)
+            paragraph_timeout = self.parent.settings.get('paragraph_timeout', 300)
             prompt_template = self.prompt_text.get("1.0", tk.END).strip()
             
             client = self.parent._create_client()
@@ -684,7 +697,7 @@ class PostEditingWindow(tk.Toplevel):
                 source_text, target_text = str(row['Source']), str(row['Translation'])
                 full_prompt = prompt_template.format(source=source_text, target=target_text)
                 
-                edited_para = translate_single_paragraph(client, model_name, full_prompt, max_tokens, retry_attempts)
+                edited_para = translate_single_paragraph(client, model_name, full_prompt, max_tokens, retry_attempts, paragraph_timeout)
                 
                 self.after(0, self._cancel_timer)
                 edited_paragraphs.append(edited_para)

@@ -1,46 +1,37 @@
-# AI-Powered Translation Aligner (AI-PTA) v0.14
+# AI-Powered Translation Aligner (AI-PTA) v0.15
 
 A comprehensive desktop application for AI-assisted translation and text processing with advanced post-editing capabilities.
 
 <img width="1802" height="1128" alt="image" src="https://github.com/user-attachments/assets/af71d061-9d5f-4d1c-9cf6-b1ac8ef500b3" />
 
-## New Features in v0.14
+## New Features in v0.15
 
-### Enhanced Post-Editing Tool
+### API Connection Testing
+- **Built-in API Testing**: Test API connections directly from the main interface
+- **Real-time Validation**: Immediate feedback on API connectivity and model availability
+- **Error Diagnostics**: Detailed error reporting for connection issues
+
+### Azure OpenAI Integration
+- **Streamlined Configuration**: Simplified Azure endpoint and API version management
+- **Enhanced Security**: Better handling of Azure-specific authentication parameters
+- **Configuration Persistence**: Automatic saving of Azure-specific settings
+
+### User Interface
+- **Improved Status Indicators**: More detailed progress and status messaging
+- **Better Error Handling**: Enhanced error reporting throughout the application
+
+### Post-Editing Tool
 - **AI-Assisted Editing**: Polish and refine translated text using AI models with custom editing prompts
 - **Before/After Comparison**: Generate Excel files showing original vs. edited text side-by-side
 - **Batch Processing**: Apply post-editing to entire documents paragraph by paragraph
 - **Flexible Placeholders**: Use {source} and {target} placeholders for targeted editing instructions
 - **Resume Capability**: Automatic task resumption with progress tracking
 
-<img width="1052" height="948" alt="image" src="https://github.com/user-attachments/assets/fbddd68d-e4e1-4e53-93f0-435d8ad1757a" />
-
-### Advanced Terminology Management
+### Terminology Management
 - **Interactive Term Editor**: Add, modify, and delete terms with visual interface
 - **Real-time Annotation**: Automatically annotate source text with target terms
 - **CSV Terminology Support**: Import/export terminology lists in CSV format
 - **Term Highlighting**: Visual source text highlighting with target term annotations
-
-<img width="1502" height="1098" alt="image" src="https://github.com/user-attachments/assets/0cc3e1d0-4366-4039-af9f-c5eaf87f246b" />
-
-### Microsoft Azure Integration
-- **Azure OpenAI Support**: Full integration with Microsoft Azure OpenAI services
-- **Custom Endpoint Configuration**: Support for custom Azure endpoints and API versions
-- **Secure Key Management**: Encrypted API key storage and management
-
-<img width="754" height="433" alt="image" src="https://github.com/user-attachments/assets/48b9cab2-de77-4738-9a63-90e9b46f7d89" />
-
-### Enhanced API Management
-- **Multiple Provider Support**: DeepSeek, SiliconFlow, OpenAI, and Microsoft Azure
-- **API Key Management**: Secure storage and organization of multiple API keys
-- **Connection Testing**: Built-in API connection testing and validation
-- **Custom Model Names**: Support for custom model configurations
-
-### Improved User Experience
-- **Resume Functionality**: Automatic recovery from interruptions with resume files
-- **Progress Tracking**: Real-time progress indicators and timer display
-- **Error Handling**: Comprehensive error logging and user-friendly error messages
-- **Status Updates**: Detailed status messages with color-coded indicators
 
 ## Core Features
 

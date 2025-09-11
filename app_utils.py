@@ -33,6 +33,7 @@ def load_settings():
         "context_before": 1,
         "context_after": 1,
         "retry_attempts": 3,
+        "paragraph_timeout": 300,
         "api_providers": {
             "DeepSeek": {
                 "base_url": "https://api.deepseek.com",
@@ -119,7 +120,7 @@ def split_text_into_paragraphs(text):
     paragraphs = re.split(r'\n\s*\n', text)
     return [p.strip() for p in paragraphs if p.strip()]
 
-def translate_single_paragraph(client, model_name, full_prompt, max_tokens, retry_attempts):
+def translate_single_paragraph(client, model_name, full_prompt, max_tokens, retry_attempts, paragraph_timeout):
     last_exception = None
     for attempt in range(retry_attempts):
         try:
@@ -134,7 +135,8 @@ def translate_single_paragraph(client, model_name, full_prompt, max_tokens, retr
                     {"role": "user", "content": user_message},
                 ],
                 stream=False,
-                max_tokens=max_tokens
+                max_tokens=max_tokens,
+                timeout=paragraph_timeout
             )
     
             if response.choices:

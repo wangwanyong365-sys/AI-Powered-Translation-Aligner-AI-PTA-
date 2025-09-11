@@ -47,13 +47,25 @@ class TranslationApp(tk.Tk):
     def _setup_style(self):
         self.style = ttk.Style(self)
         self.style.theme_use("clam")
-        self.style.configure("TButton", font=("Segoe UI", 10), padding=5)
-        self.style.configure("TLabelFrame.Label", font=("Segoe UI", 11, "bold"))
+        
+        default_font = ("Segoe UI", 10)
+        self.style.configure("TLabel", font=default_font)
+        self.style.configure("TButton", font=default_font, padding=5)
+        self.style.configure("TEntry", font=default_font)
+        
+        self.style.configure("TLabelframe.Label", font=("Segoe UI", 12, "bold"))
+        
+        self.style.configure("Accent.TButton", font=("Segoe UI", 10, "bold"), padding=8)
+        self.style.map("Accent.TButton",
+                       background=[("active", "#0078D7")],
+                       foreground=[("active", "white")])
     
     def _setup_ui(self):
-        self.title("AI-Powered Translation Aligner (AI-PTA) v0.14")
+        self.title("AI-Powered Translation Aligner (AI-PTA) v0.15")
         self.geometry("1200x700")
         self.minsize(1000, 700)
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
     
         self.menu_bar = tk.Menu(self)
         self.config(menu=self.menu_bar)
@@ -72,8 +84,8 @@ class TranslationApp(tk.Tk):
         help_menu.add_command(label="About", command=self._show_about_info)
         help_menu.add_command(label="View License", command=self._show_license_info)
     
-        main_frame = ttk.Frame(self, padding="10")
-        main_frame.pack(expand=True, fill=tk.BOTH)
+        main_frame = ttk.Frame(self, padding="15")
+        main_frame.grid(row=0, column=0, sticky="nsew")
         main_frame.rowconfigure(0, weight=1)
         main_frame.columnconfigure(0, weight=1)
     
@@ -174,14 +186,14 @@ class TranslationApp(tk.Tk):
         ttk.Button(self.azure_settings_frame, text="Save Azure Config", command=self._save_azure_config).grid(row=1, column=2, padx=5, pady=2)
         self.azure_settings_frame.columnconfigure(1, weight=1)
     
-        self.process_button = ttk.Button(main_frame, text="Start Processing", command=self._start_processing)
+        self.process_button = ttk.Button(main_frame, text="Start Processing", command=self._start_processing, style="Accent.TButton")
         self.process_button.grid(row=1, column=0, pady=10, sticky="ew")
         
-        status_frame = ttk.Frame(self)
-        status_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=5, pady=2)
-        self.status_label = ttk.Label(status_frame, text="Ready", anchor=tk.W)
+        status_bar = ttk.Frame(self)
+        status_bar.grid(row=1, column=0, sticky="ew")
+        self.status_label = ttk.Label(status_bar, text="Ready", relief=tk.SUNKEN, anchor=tk.W, padding=5)
         self.status_label.pack(side=tk.LEFT, expand=True, fill=tk.X)
-        self.timer_label = ttk.Label(status_frame, text="", anchor=tk.E, width=10)
+        self.timer_label = ttk.Label(status_bar, text="", relief=tk.SUNKEN, anchor=tk.E, padding=5)
         self.timer_label.pack(side=tk.RIGHT)
         self._update_status("Ready", "gray")
     
@@ -199,6 +211,7 @@ class TranslationApp(tk.Tk):
         context_before = tk.IntVar(value=self.settings.get("context_before", 1))
         context_after = tk.IntVar(value=self.settings.get("context_after", 1))
         retry_attempts = tk.IntVar(value=self.settings.get("retry_attempts", 3))
+        paragraph_timeout = tk.IntVar(value=self.settings.get("paragraph_timeout", 300))
     
         ttk.Label(content_frame, text="Max Tokens:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
         ttk.Entry(content_frame, textvariable=max_tokens, width=15).grid(row=0, column=1, sticky="w", padx=5, pady=5)
@@ -211,6 +224,9 @@ class TranslationApp(tk.Tk):
         
         ttk.Label(content_frame, text="Retry Attempts on Failure:").grid(row=3, column=0, sticky="w", padx=5, pady=5)
         ttk.Entry(content_frame, textvariable=retry_attempts, width=15).grid(row=3, column=1, sticky="w", padx=5, pady=5)
+
+        ttk.Label(content_frame, text="Retry on Timeout (seconds):").grid(row=4, column=0, sticky="w", padx=5, pady=5)
+        ttk.Entry(content_frame, textvariable=paragraph_timeout, width=15).grid(row=4, column=1, sticky="w", padx=5, pady=5)
     
         def save_and_close():
             try:
@@ -218,6 +234,7 @@ class TranslationApp(tk.Tk):
                 self.settings['context_before'] = context_before.get()
                 self.settings['context_after'] = context_after.get()
                 self.settings['retry_attempts'] = retry_attempts.get()
+                self.settings['paragraph_timeout'] = paragraph_timeout.get()
                 save_settings(self.settings)
                 messagebox.showinfo("Success", "Settings saved.", parent=dialog)
                 dialog.destroy()
@@ -317,7 +334,7 @@ furnished to do so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY, EXPRESS OR
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
@@ -633,6 +650,7 @@ SOFTWARE."""
             context_after = self.settings.get('context_after', 1)
             max_tokens_value = self.settings.get('max_tokens', 8000)
             retry_attempts_value = self.settings.get('retry_attempts', 3)
+            paragraph_timeout_value = self.settings.get('paragraph_timeout', 300)
     
             client = self._create_client()
     
@@ -689,7 +707,7 @@ SOFTWARE."""
                     if j + 1 < end: context_parts.extend(["\n[Next Context]"] + paragraphs[j+1:end])
     
                     full_prompt = user_prompt_template.format(context="\n".join(context_parts))
-                    translated_para = translate_single_paragraph(client, model_name, full_prompt, max_tokens_value, retry_attempts_value)
+                    translated_para = translate_single_paragraph(client, model_name, full_prompt, max_tokens_value, retry_attempts_value, paragraph_timeout_value)
                     
                     self.after(0, self._cancel_timer)
                     translated_paragraphs.append(translated_para)
