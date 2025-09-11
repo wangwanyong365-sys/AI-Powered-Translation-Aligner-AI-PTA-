@@ -2,7 +2,9 @@
 
 A comprehensive desktop application for AI-assisted translation and text processing with advanced post-editing capabilities.
 
-<img width="1802" height="1128" alt="image" src="https://github.com/user-attachments/assets/af71d061-9d5f-4d1c-9cf6-b1ac8ef500b3" />
+<img width="1802" height="1128" alt="image" src="https://github.com/user-attachments/assets/5154b947-ecda-42e2-a3eb-777c26f4bc2f" />
+
+<img width="518" height="420" alt="image" src="https://github.com/user-attachments/assets/29cbfab4-d3a1-4771-9c8c-dc2ac99dcfe3" />
 
 ## New Features in v0.15
 
@@ -27,11 +29,15 @@ A comprehensive desktop application for AI-assisted translation and text process
 - **Flexible Placeholders**: Use {source} and {target} placeholders for targeted editing instructions
 - **Resume Capability**: Automatic task resumption with progress tracking
 
+<img width="1052" height="948" alt="image" src="https://github.com/user-attachments/assets/5f4423f7-291e-4c6c-922d-20b4cf180f7a" />
+
 ### Terminology Management
 - **Interactive Term Editor**: Add, modify, and delete terms with visual interface
 - **Real-time Annotation**: Automatically annotate source text with target terms
 - **CSV Terminology Support**: Import/export terminology lists in CSV format
 - **Term Highlighting**: Visual source text highlighting with target term annotations
+
+<img width="1502" height="1098" alt="image" src="https://github.com/user-attachments/assets/66c47f56-a757-4bba-9e51-5a19b1b5ab3d" />
 
 ## Core Features
 
