@@ -23,6 +23,7 @@ class TranslationApp(tk.Tk):
         self.annotator_window = None
         self.post_editor_window = None
         
+
         self.stop_requested = threading.Event()
         self.is_processing = False
         self.resume_data = None
@@ -61,7 +62,7 @@ class TranslationApp(tk.Tk):
                        foreground=[("active", "white")])
     
     def _setup_ui(self):
-        self.title("AI-Powered Translation Aligner (AI-PTA) v0.15")
+        self.title("AI-Powered Translation Aligner (AI-PTA) v0.16")
         self.geometry("1200x700")
         self.minsize(1000, 700)
         self.columnconfigure(0, weight=1)
@@ -175,16 +176,21 @@ class TranslationApp(tk.Tk):
         self.test_api_button = ttk.Button(model_btn_frame, text="Test", command=self._test_api_connection, width=6)
         self.test_api_button.pack(side=tk.LEFT, padx=2)
     
-        self.azure_settings_frame = ttk.LabelFrame(api_settings_frame, text="Microsoft Azure Settings", padding=5)
+        self.azure_settings_frame = ttk.LabelFrame(api_settings_frame, text="Azure Settings", padding=5)
         self.azure_settings_frame.grid(row=3, column=0, columnspan=2, sticky="ew", padx=5, pady=10)
+        self.azure_settings_frame.columnconfigure(1, weight=1)
+        
         ttk.Label(self.azure_settings_frame, text="Azure Endpoint:").grid(row=0, column=0, sticky="w", padx=5, pady=2)
         self.azure_endpoint_var = tk.StringVar()
         ttk.Entry(self.azure_settings_frame, textvariable=self.azure_endpoint_var).grid(row=0, column=1, sticky="ew", padx=5, pady=2)
-        ttk.Label(self.azure_settings_frame, text="API Version:").grid(row=1, column=0, sticky="w", padx=5, pady=2)
+        
+        self.api_version_label = ttk.Label(self.azure_settings_frame, text="API Version:")
+        self.api_version_label.grid(row=1, column=0, sticky="w", padx=5, pady=2)
         self.api_version_var = tk.StringVar()
-        ttk.Entry(self.azure_settings_frame, textvariable=self.api_version_var).grid(row=1, column=1, sticky="ew", padx=5, pady=2)
-        ttk.Button(self.azure_settings_frame, text="Save Azure Config", command=self._save_azure_config).grid(row=1, column=2, padx=5, pady=2)
-        self.azure_settings_frame.columnconfigure(1, weight=1)
+        self.api_version_entry = ttk.Entry(self.azure_settings_frame, textvariable=self.api_version_var)
+        self.api_version_entry.grid(row=1, column=1, sticky="ew", padx=5, pady=2)
+
+        ttk.Button(self.azure_settings_frame, text="Save Azure Config", command=self._save_azure_config).grid(row=2, column=1, sticky="e", padx=5, pady=(5,2))
     
         self.process_button = ttk.Button(main_frame, text="Start Processing", command=self._start_processing, style="Accent.TButton")
         self.process_button.grid(row=1, column=0, pady=10, sticky="ew")
@@ -224,7 +230,7 @@ class TranslationApp(tk.Tk):
         
         ttk.Label(content_frame, text="Retry Attempts on Failure:").grid(row=3, column=0, sticky="w", padx=5, pady=5)
         ttk.Entry(content_frame, textvariable=retry_attempts, width=15).grid(row=3, column=1, sticky="w", padx=5, pady=5)
-
+    
         ttk.Label(content_frame, text="Retry on Timeout (seconds):").grid(row=4, column=0, sticky="w", padx=5, pady=5)
         ttk.Entry(content_frame, textvariable=paragraph_timeout, width=15).grid(row=4, column=1, sticky="w", padx=5, pady=5)
     
@@ -276,11 +282,20 @@ class TranslationApp(tk.Tk):
     
     def _on_provider_select(self, event=None):
         provider_name = self.api_provider_var.get()
-        if provider_name == "Microsoft Azure":
+        provider_config = self.settings["api_providers"].get(provider_name, {})
+    
+        if "(Azure)" in provider_name:
             self.azure_settings_frame.grid()
-            provider_config = self.settings["api_providers"].get(provider_name, {})
             self.azure_endpoint_var.set(provider_config.get("azure_endpoint", ""))
-            self.api_version_var.set(provider_config.get("api_version", ""))
+            
+            if "api_version" in provider_config:
+                self.api_version_label.grid()
+                self.api_version_entry.grid()
+                self.api_version_var.set(provider_config.get("api_version", ""))
+            else:
+                self.api_version_label.grid_remove()
+                self.api_version_entry.grid_remove()
+                self.api_version_var.set("")
         else:
             self.azure_settings_frame.grid_remove()
     
@@ -290,15 +305,17 @@ class TranslationApp(tk.Tk):
         self._update_model_name_combo()
     
     def _save_azure_config(self):
-        provider_name = "Microsoft Azure"
-        if self.api_provider_var.get() != provider_name:
+        provider_name = self.api_provider_var.get()
+        if "(Azure)" not in provider_name:
             return
-        
-        endpoint = self.azure_endpoint_var.get().strip()
-        version = self.api_version_var.get().strip()
     
+        endpoint = self.azure_endpoint_var.get().strip()
         self.settings["api_providers"][provider_name]["azure_endpoint"] = endpoint
-        self.settings["api_providers"][provider_name]["api_version"] = version
+    
+        if self.api_version_entry.winfo_viewable():
+            version = self.api_version_var.get().strip()
+            self.settings["api_providers"][provider_name]["api_version"] = version
+        
         save_settings(self.settings)
         messagebox.showinfo("Success", "Azure configuration saved.")
     
@@ -475,15 +492,23 @@ SOFTWARE."""
     
         provider_config = self.settings['api_providers'][provider_name]
     
-        if provider_name == "Microsoft Azure":
+        if provider_name == "OpenAI (Azure)":
             azure_endpoint = provider_config.get('azure_endpoint')
             api_version = provider_config.get('api_version')
             if not azure_endpoint or not api_version:
-                raise ValueError("Azure Endpoint and API Version must be configured in settings.")
+                raise ValueError("Azure Endpoint and API Version must be configured.")
             return openai.AzureOpenAI(
                 api_key=api_key,
                 azure_endpoint=azure_endpoint,
                 api_version=api_version,
+            )
+        elif provider_name == "DeepSeek (Azure)":
+            azure_endpoint = provider_config.get('azure_endpoint')
+            if not azure_endpoint:
+                raise ValueError("Azure Endpoint must be configured.")
+            return openai.OpenAI(
+                api_key=api_key, 
+                base_url=azure_endpoint
             )
         else:
             base_url = provider_config.get('base_url')

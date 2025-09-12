@@ -50,9 +50,14 @@ def load_settings():
                 "api_keys": {},
                 "model_names": ["gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"]
             },
-            "Microsoft Azure": {
+            "OpenAI (Azure)": {
                 "azure_endpoint": "",
                 "api_version": "2024-12-01-preview",
+                "api_keys": {},
+                "model_names": []
+            },
+            "DeepSeek (Azure)": {
+                "azure_endpoint": "",
                 "api_keys": {},
                 "model_names": []
             }
