@@ -1,12 +1,14 @@
-# AI-Powered Translation Aligner (AI-PTA) v0.15
+# AI-Powered Translation Aligner (AI-PTA) v0.16
 
 A comprehensive desktop application for AI-assisted translation and text processing with advanced post-editing capabilities.
 
-<img width="1802" height="1128" alt="image" src="https://github.com/user-attachments/assets/5154b947-ecda-42e2-a3eb-777c26f4bc2f" />
+<img width="1802" height="1128" alt="image" src="https://github.com/user-attachments/assets/200cd6a6-6f3e-4b01-aaab-b93c95ecaf1f" />
 
-## New Features in v0.15
+## New Features in v0.16
 
 <img width="518" height="420" alt="image" src="https://github.com/user-attachments/assets/29cbfab4-d3a1-4771-9c8c-dc2ac99dcfe3" />
+
+Fixed some known bugs in the API Provider ribbon and added the ability to call the DeepSeek model from Microsoft Azure.
 
 ### API Connection Testing
 - **Built-in API Testing**: Test API connections directly from the main interface
