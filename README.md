@@ -1,10 +1,14 @@
-# AI-Powered Translation Aligner (AI-PTA) v0.16
+# AI-Powered Translation Aligner (AI-PTA) v0.18
 
 A comprehensive desktop application for AI-assisted translation and text processing with advanced post-editing capabilities.
 
-<img width="1802" height="1128" alt="image" src="https://github.com/user-attachments/assets/200cd6a6-6f3e-4b01-aaab-b93c95ecaf1f" />
+The AI-Powered Translation Aligner program has been **officially released** starting from version **0.18**. 
 
-## New Features in v0.16
+This means you can directly click to use it on a Windows computer **without** installing Python
+
+<img width="1802" height="1128" alt="image" src="https://github.com/user-attachments/assets/69dd4a37-c951-4d44-929d-6d95858e7251" />
+
+## New Features in v0.18
 
 <img width="518" height="420" alt="image" src="https://github.com/user-attachments/assets/29cbfab4-d3a1-4771-9c8c-dc2ac99dcfe3" />
 
