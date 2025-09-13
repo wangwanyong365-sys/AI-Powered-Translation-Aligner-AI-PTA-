@@ -444,7 +444,7 @@ class PostEditingWindow(tk.Toplevel):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
 
-        self.source_file_path = tk.StringVar()
+        self.selected_files = []
         self.stop_requested = threading.Event()
         self.is_processing = False
         self.resume_data = None
@@ -487,14 +487,17 @@ class PostEditingWindow(tk.Toplevel):
         main_frame.rowconfigure(1, weight=1)
         main_frame.columnconfigure(0, weight=1)
     
-        file_frame = ttk.LabelFrame(main_frame, text="Source File", padding="10")
+        file_frame = ttk.LabelFrame(main_frame, text="File Selection", padding="10")
         file_frame.grid(row=0, column=0, sticky="ew", pady=(0, 10))
         file_frame.columnconfigure(0, weight=1)
         
-        entry = ttk.Entry(file_frame, textvariable=self.source_file_path, state="readonly")
-        entry.grid(row=0, column=0, sticky="ew", padx=(0, 5))
-        browse_button = ttk.Button(file_frame, text="Browse...", command=self._browse_file)
-        browse_button.grid(row=0, column=1)
+        self.file_listbox = tk.Listbox(file_frame, height=4, font=("Segoe UI", 10))
+        self.file_listbox.grid(row=0, column=0, sticky="ew")
+        scrollbar = ttk.Scrollbar(file_frame, orient=tk.VERTICAL, command=self.file_listbox.yview)
+        scrollbar.grid(row=0, column=1, sticky="ns")
+        self.file_listbox.config(yscrollcommand=scrollbar.set)
+        browse_button = ttk.Button(file_frame, text="Select XLSX Files...", command=self._browse_files)
+        browse_button.grid(row=1, column=0, columnspan=2, pady=(10, 0), sticky="e")
     
         prompt_frame = ttk.LabelFrame(main_frame, text="Post-editing Prompt", padding="10")
         prompt_frame.grid(row=1, column=0, sticky="nsew", pady=5)
@@ -541,15 +544,18 @@ class PostEditingWindow(tk.Toplevel):
             self.prompt_var.set(first_prompt_name)
             self._on_prompt_select()
     
-    def _browse_file(self):
-        filepath = filedialog.askopenfilename(
-            title="Select the Excel file to post-edit",
+    def _browse_files(self):
+        files = filedialog.askopenfilenames(
+            title="Select Excel files to post-edit",
             filetypes=(("Excel files", "*.xlsx"), ("All files", "*.*")),
             parent=self
         )
-        if filepath:
-            self.source_file_path.set(filepath)
-            self._update_status(f"Selected file: {os.path.basename(filepath)}", "blue")
+        if files:
+            self.selected_files = list(files)
+            self.file_listbox.delete(0, tk.END)
+            for file in self.selected_files:
+                self.file_listbox.insert(tk.END, os.path.basename(file))
+            self._update_status(f"Selected {len(self.selected_files)} files", "blue")
     
     def _update_status(self, text, color):
         self.status_label.config(text=text, foreground=color)
@@ -617,9 +623,9 @@ class PostEditingWindow(tk.Toplevel):
         if os.path.exists(RESUME_PE_FILE):
             try:
                 with open(RESUME_PE_FILE, 'r', encoding='utf-8') as f: data = json.load(f)
-                file_name = os.path.basename(data.get('current_file', ''))
+                file_name = os.path.basename(data.get('current_file', 'unknown file'))
                 row_index = data.get('last_row_index', -1)
-                if messagebox.askyesno("Unfinished Task", f"Found an unfinished post-editing task for '{file_name}' (stopped at row {row_index + 1}).\nResume?", parent=self):
+                if messagebox.askyesno("Unfinished Task", f"An unfinished post-editing task for '{file_name}' (stopped at row {row_index + 1}) was found.\n\nDo you want to resume?", parent=self):
                     self._load_resume_state(data)
                 else:
                     os.remove(RESUME_PE_FILE)
@@ -629,18 +635,26 @@ class PostEditingWindow(tk.Toplevel):
     
     def _load_resume_state(self, data):
         self.resume_data = data
-        self.source_file_path.set(data.get('current_file', ''))
-        self._update_status("Ready to resume. Click 'Start Post-editing'.", "blue")
+        self.selected_files = data.get('all_files', [])
+        self.file_listbox.delete(0, tk.END)
+        for f in self.selected_files:
+            self.file_listbox.insert(tk.END, os.path.basename(f))
+        self._update_status(f"Ready to resume. {len(self.selected_files)} files loaded.", "blue")
     
-    def _save_resume_state(self, current_file, last_index, edited_paras):
-        state = {'current_file': current_file, 'last_row_index': last_index, 'edited_paragraphs': edited_paras}
+    def _save_resume_state(self, current_file, last_index, edited_paras, all_files):
+        state = {
+            'current_file': current_file,
+            'last_row_index': last_index,
+            'edited_paragraphs': edited_paras,
+            'all_files': all_files
+        }
         try:
             with open(RESUME_PE_FILE, 'w', encoding='utf-8') as f: json.dump(state, f, indent=4)
         except Exception as e:
             log_error(f"Failed to save post-edit resume state: {e}")
     
     def _start_post_editing(self):
-        if not self.source_file_path.get(): return messagebox.showerror("Error", "Please select an Excel file.", parent=self)
+        if not self.selected_files: return messagebox.showerror("Error", "Please select one or more Excel files.", parent=self)
         prompt = self.prompt_text.get("1.0", tk.END).strip()
         if not prompt: return messagebox.showerror("Error", "Prompt cannot be empty.", parent=self)
         if "{source}" not in prompt or "{target}" not in prompt:
@@ -670,82 +684,95 @@ class PostEditingWindow(tk.Toplevel):
             
             client = self.parent._create_client()
             
-            file_path = self.source_file_path.get()
-            
-            self.after(0, self._update_status, f"Reading: {os.path.basename(file_path)}", "orange")
-            df = pd.read_excel(file_path)
-            
-            if 'Source' not in df.columns or 'Translation' not in df.columns:
-                raise ValueError("Excel file must contain 'Source' and 'Translation' columns.")
-    
-            edited_paragraphs = []
-            total_rows = len(df)
-            start_row = 0
-            if resume_data and file_path == resume_data.get('current_file'):
-                start_row = resume_data.get('last_row_index', -1) + 1
-                edited_paragraphs = resume_data.get('edited_paragraphs', [])
-    
-            for i, row in df.iloc[start_row:].iterrows():
-                if self.stop_requested.is_set():
-                    self._save_resume_state(file_path, i - 1, edited_paragraphs)
-                    self.after(0, self._update_status, f"Stopped. Progress for '{os.path.basename(file_path)}' saved.", "blue")
-                    return
-    
-                self.after(0, self._update_status, f"Editing row {i + 1}/{total_rows}", "orange")
-                start_time = time.time()
-                self.after(0, self._update_timer, start_time)
-    
-                source_text, target_text = str(row['Source']), str(row['Translation'])
-                full_prompt = prompt_template.format(source=source_text, target=target_text)
+            total_files = len(self.selected_files)
+            start_file_index = 0
+            if resume_data:
+                try:
+                    start_file_index = self.selected_files.index(resume_data.get('current_file'))
+                except ValueError:
+                    log_error(f"Resumed file '{resume_data.get('current_file')}' not found in selection.")
+
+            for file_idx in range(start_file_index, total_files):
+                file_path = self.selected_files[file_idx]
+                file_name = os.path.basename(file_path)
+
+                self.after(0, self._update_status, f"[{file_idx+1}/{total_files}] Reading: {file_name}", "orange")
+                df = pd.read_excel(file_path)
                 
-                edited_para = translate_single_paragraph(client, model_name, full_prompt, max_tokens, retry_attempts, paragraph_timeout)
-                
-                self.after(0, self._cancel_timer)
-                edited_paragraphs.append(edited_para)
-                
-                if request_interval_value > 0 and i < total_rows - 1:
-                    time.sleep(request_interval_value)
-            
-            self.after(0, self._update_status, "Saving output files...", "orange")
+                if 'Source' not in df.columns or 'Translation' not in df.columns:
+                    log_error(f"File {file_name} skipped: must contain 'Source' and 'Translation' columns.")
+                    continue
     
-            df['Post-edited'] = pd.Series(edited_paragraphs, index=df.index[start_row:start_row + len(edited_paragraphs)])
-            output_df = df
-            base_name = os.path.splitext(os.path.basename(file_path))[0]
-            output_dir = os.path.dirname(file_path)
+                edited_paragraphs = []
+                total_rows = len(df)
+                start_row = 0
+                if resume_data and file_path == resume_data.get('current_file'):
+                    start_row = resume_data.get('last_row_index', -1) + 1
+                    edited_paragraphs = resume_data.get('edited_paragraphs', [])
+                    resume_data = None
     
-            excel_path = os.path.join(output_dir, f"{base_name}_postedited.xlsx")
-            output_df.to_excel(excel_path, index=False, engine='openpyxl')
-            
-            red_bold_font = Font(color="FF0000", bold=True)
-            wb = load_workbook(excel_path)
-            ws = wb.active
-            post_edited_col_idx = -1
-            for col_idx, cell in enumerate(ws[1]):
-                if cell.value == 'Post-edited':
-                    post_edited_col_idx = col_idx
-                    break
-            
-            if post_edited_col_idx != -1:
-                for row in ws.iter_rows(min_row=2, max_row=ws.max_row):
-                    cell = row[post_edited_col_idx]
-                    if not isinstance(cell.value, str): continue
-                    if cell.value == "[ERROR_CONTENT_FILTER]":
-                        cell.value = "Rejected by API (content policy)"
-                        cell.font = red_bold_font
-                    elif cell.value == "[ERROR_NETWORK]":
-                        cell.value = "Network Issue"
-                        cell.font = red_bold_font
-                    elif cell.value.startswith("[ERROR_OTHER:"):
-                        cell.value = f"Failed: {cell.value[13:-3]}"
-                        cell.font = red_bold_font
-            wb.save(excel_path)
-            
-            full_edited_text = "\n\n".join(output_df['Post-edited'].astype(str).tolist())
-            txt_path = os.path.join(output_dir, f"{base_name}_postedited.txt")
-            with open(txt_path, 'w', encoding='utf-8') as f: f.write(full_edited_text)
+                for i, row in df.iloc[start_row:].iterrows():
+                    if self.stop_requested.is_set():
+                        self._save_resume_state(file_path, i - 1, edited_paragraphs, self.selected_files)
+                        self.after(0, self._update_status, f"Stopped. Progress for '{file_name}' saved.", "blue")
+                        return
+    
+                    self.after(0, self._update_status, f"[{file_idx+1}/{total_files}] Editing {file_name} (row {i + 1}/{total_rows})", "orange")
+                    start_time = time.time()
+                    self.after(0, self._update_timer, start_time)
+    
+                    source_text, target_text = str(row['Source']), str(row['Translation'])
+                    full_prompt = prompt_template.format(source=source_text, target=target_text)
+                    
+                    edited_para = translate_single_paragraph(client, model_name, full_prompt, max_tokens, retry_attempts, paragraph_timeout)
+                    
+                    self.after(0, self._cancel_timer)
+                    edited_paragraphs.append(edited_para)
+                    
+                    if request_interval_value > 0 and i < total_rows - 1:
+                        time.sleep(request_interval_value)
+                
+                self.after(0, self._update_status, f"[{file_idx+1}/{total_files}] Saving output for {file_name}...", "orange")
+                
+                df['Post-edited'] = pd.Series(edited_paragraphs)
+                output_df = df
+                base_name = os.path.splitext(file_name)[0]
+                output_dir = os.path.dirname(file_path)
+    
+                excel_path = os.path.join(output_dir, f"{base_name}_postedited.xlsx")
+                output_df.to_excel(excel_path, index=False, engine='openpyxl')
+                
+                red_bold_font = Font(color="FF0000", bold=True)
+                wb = load_workbook(excel_path)
+                ws = wb.active
+                post_edited_col_idx = -1
+                for col_idx, cell in enumerate(ws[1]):
+                    if cell.value == 'Post-edited':
+                        post_edited_col_idx = col_idx
+                        break
+                
+                if post_edited_col_idx != -1:
+                    for row_ws in ws.iter_rows(min_row=2, max_row=ws.max_row):
+                        cell = row_ws[post_edited_col_idx]
+                        if not isinstance(cell.value, str): continue
+                        if cell.value == "[ERROR_CONTENT_FILTER]":
+                            cell.value = "Rejected by API (content policy)"
+                            cell.font = red_bold_font
+                        elif cell.value == "[ERROR_NETWORK]":
+                            cell.value = "Network Issue"
+                            cell.font = red_bold_font
+                        elif cell.value.startswith("[ERROR_OTHER:"):
+                            cell.value = f"Failed: {cell.value[13:-3]}"
+                            cell.font = red_bold_font
+                wb.save(excel_path)
+                
+                if 'Post-edited' in output_df.columns and not output_df['Post-edited'].isnull().all():
+                    full_edited_text = "\n\n".join(output_df['Post-edited'].astype(str).tolist())
+                    txt_path = os.path.join(output_dir, f"{base_name}_postedited.txt")
+                    with open(txt_path, 'w', encoding='utf-8') as f: f.write(full_edited_text)
             
             if os.path.exists(RESUME_PE_FILE): os.remove(RESUME_PE_FILE)
-            self.after(0, self._update_status, "Post-editing complete! Files saved.", "green")
+            self.after(0, self._update_status, "Post-editing complete! All files saved.", "green")
     
         except Exception as e:
             error_message = f"Processing failed: {e}"
