@@ -14,6 +14,16 @@ This means you can directly click to use it on a Windows computer **without** in
 
 Fixed some known bugs in the API Provider ribbon and added the ability to call the DeepSeek model from Microsoft Azure.
 
+### Post-Editing Tool
+- **Batch Processing**: Apply post-editing to entire documents paragraph by paragraph
+- **AI-Assisted Editing**: Polish and refine translated text using AI models with custom editing prompts
+- **Before/After Comparison**: Generate Excel files showing original vs. edited text side-by-side
+- **Batch Processing**: Apply post-editing to entire documents paragraph by paragraph
+- **Flexible Placeholders**: Use {source} and {target} placeholders for targeted editing instructions
+- **Resume Capability**: Automatic task resumption with progress tracking
+
+<img width="1052" height="948" alt="image" src="https://github.com/user-attachments/assets/dd660c3d-9f3a-4eb6-96e8-dd78cd8f929c" />
+
 ### API Connection Testing
 - **Built-in API Testing**: Test API connections directly from the main interface
 - **Real-time Validation**: Immediate feedback on API connectivity and model availability
@@ -27,15 +37,6 @@ Fixed some known bugs in the API Provider ribbon and added the ability to call t
 ### User Interface
 - **Improved Status Indicators**: More detailed progress and status messaging
 - **Better Error Handling**: Enhanced error reporting throughout the application
-
-### Post-Editing Tool
-- **AI-Assisted Editing**: Polish and refine translated text using AI models with custom editing prompts
-- **Before/After Comparison**: Generate Excel files showing original vs. edited text side-by-side
-- **Batch Processing**: Apply post-editing to entire documents paragraph by paragraph
-- **Flexible Placeholders**: Use {source} and {target} placeholders for targeted editing instructions
-- **Resume Capability**: Automatic task resumption with progress tracking
-
-<img width="1052" height="948" alt="image" src="https://github.com/user-attachments/assets/5f4423f7-291e-4c6c-922d-20b4cf180f7a" />
 
 ### Terminology Management
 - **Interactive Term Editor**: Add, modify, and delete terms with visual interface
