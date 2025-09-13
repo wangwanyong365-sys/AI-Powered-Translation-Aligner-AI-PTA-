@@ -34,6 +34,7 @@ def load_settings():
         "context_after": 1,
         "retry_attempts": 3,
         "paragraph_timeout": 300,
+        "request_interval": 5,
         "api_providers": {
             "DeepSeek": {
                 "base_url": "https://api.deepseek.com",
@@ -122,7 +123,7 @@ def save_settings(settings):
 
 
 def split_text_into_paragraphs(text):
-    paragraphs = re.split(r'\n\s*\n', text)
+    paragraphs = re.split(r'\n+', text)
     return [p.strip() for p in paragraphs if p.strip()]
 
 def translate_single_paragraph(client, model_name, full_prompt, max_tokens, retry_attempts, paragraph_timeout):

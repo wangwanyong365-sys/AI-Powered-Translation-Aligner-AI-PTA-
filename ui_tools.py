@@ -464,7 +464,7 @@ class PostEditingWindow(tk.Toplevel):
                 return
             self.stop_requested.set()
         self.destroy()
-
+    
     def _setup_style(self):
         self.style = ttk.Style(self)
         self.style.theme_use("clam")
@@ -665,6 +665,7 @@ class PostEditingWindow(tk.Toplevel):
             max_tokens = self.parent.settings.get('max_tokens', 8000)
             retry_attempts = self.parent.settings.get('retry_attempts', 3)
             paragraph_timeout = self.parent.settings.get('paragraph_timeout', 300)
+            request_interval_value = self.parent.settings.get('request_interval', 5)
             prompt_template = self.prompt_text.get("1.0", tk.END).strip()
             
             client = self.parent._create_client()
@@ -701,6 +702,9 @@ class PostEditingWindow(tk.Toplevel):
                 
                 self.after(0, self._cancel_timer)
                 edited_paragraphs.append(edited_para)
+                
+                if request_interval_value > 0 and i < total_rows - 1:
+                    time.sleep(request_interval_value)
             
             self.after(0, self._update_status, "Saving output files...", "orange")
     

@@ -62,7 +62,7 @@ class TranslationApp(tk.Tk):
                        foreground=[("active", "white")])
     
     def _setup_ui(self):
-        self.title("AI-Powered Translation Aligner (AI-PTA) v0.16")
+        self.title("AI-Powered Translation Aligner (AI-PTA) v0.17")
         self.geometry("1200x700")
         self.minsize(1000, 700)
         self.columnconfigure(0, weight=1)
@@ -189,7 +189,7 @@ class TranslationApp(tk.Tk):
         self.api_version_var = tk.StringVar()
         self.api_version_entry = ttk.Entry(self.azure_settings_frame, textvariable=self.api_version_var)
         self.api_version_entry.grid(row=1, column=1, sticky="ew", padx=5, pady=2)
-
+    
         ttk.Button(self.azure_settings_frame, text="Save Azure Config", command=self._save_azure_config).grid(row=2, column=1, sticky="e", padx=5, pady=(5,2))
     
         self.process_button = ttk.Button(main_frame, text="Start Processing", command=self._start_processing, style="Accent.TButton")
@@ -218,6 +218,7 @@ class TranslationApp(tk.Tk):
         context_after = tk.IntVar(value=self.settings.get("context_after", 1))
         retry_attempts = tk.IntVar(value=self.settings.get("retry_attempts", 3))
         paragraph_timeout = tk.IntVar(value=self.settings.get("paragraph_timeout", 300))
+        request_interval = tk.IntVar(value=self.settings.get("request_interval", 5))
     
         ttk.Label(content_frame, text="Max Tokens:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
         ttk.Entry(content_frame, textvariable=max_tokens, width=15).grid(row=0, column=1, sticky="w", padx=5, pady=5)
@@ -233,14 +234,23 @@ class TranslationApp(tk.Tk):
     
         ttk.Label(content_frame, text="Retry on Timeout (seconds):").grid(row=4, column=0, sticky="w", padx=5, pady=5)
         ttk.Entry(content_frame, textvariable=paragraph_timeout, width=15).grid(row=4, column=1, sticky="w", padx=5, pady=5)
+        
+        ttk.Label(content_frame, text="Request Interval (seconds):").grid(row=5, column=0, sticky="w", padx=5, pady=5)
+        ttk.Entry(content_frame, textvariable=request_interval, width=15).grid(row=5, column=1, sticky="w", padx=5, pady=5)
     
         def save_and_close():
             try:
+                new_interval = request_interval.get()
+                if new_interval < 0:
+                    messagebox.showerror("Invalid Input", "Request interval cannot be negative.", parent=dialog)
+                    return
+                
                 self.settings['max_tokens'] = max_tokens.get()
                 self.settings['context_before'] = context_before.get()
                 self.settings['context_after'] = context_after.get()
                 self.settings['retry_attempts'] = retry_attempts.get()
                 self.settings['paragraph_timeout'] = paragraph_timeout.get()
+                self.settings['request_interval'] = new_interval
                 save_settings(self.settings)
                 messagebox.showinfo("Success", "Settings saved.", parent=dialog)
                 dialog.destroy()
@@ -676,6 +686,7 @@ SOFTWARE."""
             max_tokens_value = self.settings.get('max_tokens', 8000)
             retry_attempts_value = self.settings.get('retry_attempts', 3)
             paragraph_timeout_value = self.settings.get('paragraph_timeout', 300)
+            request_interval_value = self.settings.get('request_interval', 5)
     
             client = self._create_client()
     
@@ -736,6 +747,9 @@ SOFTWARE."""
                     
                     self.after(0, self._cancel_timer)
                     translated_paragraphs.append(translated_para)
+
+                    if request_interval_value > 0 and j < total_paragraphs - 1:
+                        time.sleep(request_interval_value)
     
                 full_translated_text = "\n\n".join(translated_paragraphs)
                 translated_file_path = os.path.join(output_dir, f"{dir_name}_translated.txt")
