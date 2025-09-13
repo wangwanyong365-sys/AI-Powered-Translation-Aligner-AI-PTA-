@@ -2,6 +2,8 @@
 
 A comprehensive desktop application for AI-assisted translation and text processing with advanced post-editing capabilities.
 
+
+
 The AI-Powered Translation Aligner program has been **officially released** starting from version **0.18**. 
 
 This means you can directly click to use it on a Windows computer **without** installing Python
