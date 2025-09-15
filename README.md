@@ -1,13 +1,5 @@
 # AI-Powered Translation Aligner (AI-PTA) v0.18
 
-诗曰：
-
-混沌未分言语繁，巴别塔倒万流散。
-句读晦涩意难通，译海茫茫寻彼岸。
-
-一声号令风雷动，四海灵模文采焕。
-天涯从此若比邻，可令文海乾坤翻！
-
 A comprehensive desktop application for AI-assisted translation and text processing with advanced post-editing capabilities.
 
 **Note**: The AI-Powered Translation Aligner program has been **officially released** starting from version **0.18**. 
