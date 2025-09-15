@@ -447,11 +447,6 @@ class TermAnnotatorApp:
 
 SETTINGS_FILE = "settings.json"
 ERROR_LOG_FILE = "error_log.txt"
-API_PROVIDERS = {
-    "DeepSeek": "https://api.deepseek.com",
-    "SiliconFlow": "https://api.siliconflow.cn/v1",
-    "OpenAI": "https://api.openai.com/v1"
-}
 
 
 def log_error(error_message):
@@ -468,12 +463,16 @@ def log_error(error_message):
 
 def load_settings():
     default_settings = {
-
         "max_tokens": 8000,
         "context_before": 1,
         "context_after": 1,
         "api_keys": {},
         "model_names": ["deepseek-chat", "deepseek-reasoner"],
+        "api_providers": {
+            "DeepSeek": "https://api.deepseek.com",
+            "SiliconFlow": "https://api.siliconflow.cn/v1",
+            "OpenAI": "https://api.openai.com/v1"
+        },
         "prompts": {
             "Default Translation Prompt": (
                 "You are a professional, accurate, and faithful translator. "
@@ -561,7 +560,7 @@ class TranslationApp(tk.Tk):
         self.style.configure("TLabelFrame.Label", font=("Segoe UI", 11, "bold"))
     
     def _setup_ui(self):
-        self.title("AI-Powered Translation Aligner (AI-PTA) v0.7")
+        self.title("AI-Powered Translation Aligner (AI-PTA) v0.8")
         self.geometry("800x850") 
         self.minsize(600, 700)
     
@@ -612,9 +611,17 @@ class TranslationApp(tk.Tk):
         ttk.Entry(settings_frame, textvariable=self.context_after_var, width=10).grid(row=1, column=3, sticky="w", padx=5, pady=5)
     
         ttk.Label(settings_frame, text="API Provider:").grid(row=2, column=0, sticky="w", padx=5, pady=5)
-        self.api_provider_var = tk.StringVar(value="DeepSeek")
-        ttk.Combobox(settings_frame, textvariable=self.api_provider_var, values=list(API_PROVIDERS.keys()), state="readonly").grid(row=2, column=1, columnspan=3, sticky="ew", padx=5, pady=5)
-        
+        provider_frame = ttk.Frame(settings_frame)
+        provider_frame.grid(row=2, column=1, columnspan=3, sticky="ew", padx=5, pady=5)
+        provider_frame.columnconfigure(0, weight=1)
+        self.api_provider_var = tk.StringVar()
+        self.api_provider_combo = ttk.Combobox(provider_frame, textvariable=self.api_provider_var)
+        self.api_provider_combo.grid(row=0, column=0, sticky="ew")
+        provider_btn_frame = ttk.Frame(provider_frame)
+        provider_btn_frame.grid(row=0, column=1, padx=(5,0))
+        ttk.Button(provider_btn_frame, text="Save", command=self._save_api_provider, width=6).pack(side=tk.LEFT, padx=2)
+        ttk.Button(provider_btn_frame, text="Delete", command=self._delete_api_provider, width=6).pack(side=tk.LEFT, padx=2)
+    
         ttk.Label(settings_frame, text="API Key:").grid(row=3, column=0, sticky="w", padx=5, pady=5)
         api_key_frame = ttk.Frame(settings_frame)
         api_key_frame.grid(row=3, column=1, columnspan=3, sticky="ew", padx=5, pady=5)
@@ -626,10 +633,10 @@ class TranslationApp(tk.Tk):
         self.api_key_combo.bind("<KeyRelease>", self._on_api_key_typed) 
         api_btn_frame = ttk.Frame(api_key_frame)
         api_btn_frame.grid(row=0, column=1, padx=(5,0))
-        ttk.Button(api_btn_frame, text="Save", command=self._save_api_key, width=5).pack(side=tk.LEFT, padx=2)
-        ttk.Button(api_btn_frame, text="Delete", command=self._delete_api_key, width=5).pack(side=tk.LEFT, padx=2)
+        ttk.Button(api_btn_frame, text="Save", command=self._save_api_key, width=6).pack(side=tk.LEFT, padx=2)
+        ttk.Button(api_btn_frame, text="Delete", command=self._delete_api_key, width=6).pack(side=tk.LEFT, padx=2)
     
-        ttk.Label(settings_frame, text="Model Name (Optional):").grid(row=4, column=0, sticky="w", padx=5, pady=5)
+        ttk.Label(settings_frame, text="Model Name:").grid(row=4, column=0, sticky="w", padx=5, pady=5)
         model_frame = ttk.Frame(settings_frame)
         model_frame.grid(row=4, column=1, columnspan=3, sticky="ew", padx=5, pady=5)
         model_frame.columnconfigure(0, weight=1)
@@ -638,8 +645,8 @@ class TranslationApp(tk.Tk):
         self.model_name_combo.grid(row=0, column=0, sticky="ew")
         model_btn_frame = ttk.Frame(model_frame)
         model_btn_frame.grid(row=0, column=1, padx=(5,0))
-        ttk.Button(model_btn_frame, text="Save", command=self._save_model_name, width=5).pack(side=tk.LEFT, padx=2)
-        ttk.Button(model_btn_frame, text="Delete", command=self._delete_model_name, width=5).pack(side=tk.LEFT, padx=2)
+        ttk.Button(model_btn_frame, text="Save", command=self._save_model_name, width=6).pack(side=tk.LEFT, padx=2)
+        ttk.Button(model_btn_frame, text="Delete", command=self._delete_model_name, width=6).pack(side=tk.LEFT, padx=2)
     
         prompt_frame = ttk.LabelFrame(main_frame, text="Prompt Management", padding="10")
         prompt_frame.grid(row=2, column=0, sticky="nsew", pady=5)
@@ -688,8 +695,12 @@ class TranslationApp(tk.Tk):
         
         self._update_api_key_combo()
         self._update_model_name_combo()
+        self._update_api_provider_combo()
         if self.settings['model_names']:
             self.model_name_var.set(self.settings['model_names'][0])
+        if self.settings.get('api_providers'):
+            first_provider = list(self.settings['api_providers'].keys())[0]
+            self.api_provider_var.set(first_provider)
     
     def _show_about_info(self):
         messagebox.showinfo(
@@ -803,6 +814,49 @@ SOFTWARE."""
             save_settings(self.settings)
             self._update_model_name_combo()
             self.model_name_var.set("")
+            
+    def _update_api_provider_combo(self):
+        self.api_provider_combo['values'] = list(self.settings.get('api_providers', {}).keys())
+    
+    def _save_api_provider(self):
+        url = self.api_provider_var.get().strip()
+        if not url:
+            messagebox.showwarning("Warning", "API Provider URL cannot be empty.", parent=self)
+            return
+
+        if url in self.settings['api_providers']:
+            messagebox.showinfo("Info", f"'{url}' is already a saved provider name. To add a new one, please enter its full URL in the box.", parent=self)
+            return
+
+        if not url.startswith(("http://", "https://")):
+            messagebox.showwarning("Invalid URL", "Please enter a valid URL, starting with 'http://' or 'https://'.", parent=self)
+            return
+
+        name = simpledialog.askstring("Save API Provider", "Please enter a name for this provider (e.g., SiliconFlow):", parent=self)
+        if not (name and name.strip()):
+            return
+
+        name = name.strip()
+        if name in self.settings['api_providers']:
+            if not messagebox.askyesno("Confirm Overwrite", f"The name '{name}' already exists. Do you want to update its URL?", parent=self):
+                return
+        
+        self.settings['api_providers'][name] = url
+        save_settings(self.settings)
+        
+        self._update_api_provider_combo()
+        self.api_provider_var.set(name)
+        messagebox.showinfo("Success", f"API Provider '{name}' has been saved.", parent=self)
+    
+    def _delete_api_provider(self):
+        name = self.api_provider_var.get().strip()
+        if not name or name not in self.settings['api_providers']:
+            return messagebox.showerror("Error", "Please select a saved API Provider to delete.")
+        if messagebox.askyesno("Confirm Deletion", f"Are you sure you want to delete API Provider '{name}'?"):
+            del self.settings['api_providers'][name]
+            save_settings(self.settings)
+            self._update_api_provider_combo()
+            self.api_provider_var.set("")
     
     def _update_prompt_combo(self):
         self.prompt_combo['values'] = list(self.settings['prompts'].keys())
@@ -873,7 +927,10 @@ SOFTWARE."""
             provider_name = self.api_provider_var.get()
             api_key = self._get_current_api_key()
             model_name = self.model_name_var.get().strip() or "deepseek-chat"
-            base_url = API_PROVIDERS.get(provider_name)
+            base_url = self.settings['api_providers'].get(provider_name)
+            if not base_url:
+                self.after(0, messagebox.showerror, "Error", f"Could not find the URL for API Provider '{provider_name}'.\nPlease check your settings.")
+                raise ValueError(f"Provider URL not found for '{provider_name}'")
             user_prompt_template = self.prompt_text.get("1.0", tk.END).strip()
             context_before = self.context_before_var.get()
             context_after = self.context_after_var.get()
