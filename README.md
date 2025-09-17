@@ -6,6 +6,8 @@ A comprehensive desktop application for AI-assisted translation and text process
 
 This means you can directly click to use it on a Windows computer **without** installing Python.
 
+If you want to use this software, please adjust the settings first. This is very important!
+
 <img width="1802" height="1128" alt="image" src="https://github.com/user-attachments/assets/69dd4a37-c951-4d44-929d-6d95858e7251" />
 
 ## New Features in v0.18
