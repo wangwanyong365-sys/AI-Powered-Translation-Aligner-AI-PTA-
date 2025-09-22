@@ -1,4 +1,4 @@
-# AI-Powered Translation Aligner (AI-PTA) v1.0.1
+# AI-Powered Translation Aligner (AI-PTA) v1.0.2
 
 A comprehensive desktop application for AI-assisted translation and text processing with advanced post-editing capabilities.
 
