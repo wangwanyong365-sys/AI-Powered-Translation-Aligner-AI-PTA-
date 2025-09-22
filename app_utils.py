@@ -92,24 +92,12 @@ def load_settings():
             settings = json.load(f)
 
         for key, value in default_settings.items():
-            settings.setdefault(key, value)
-        
-        default_providers = default_settings.get("api_providers", {})
-        loaded_providers = settings.get("api_providers", {})
-        for p_name, p_defaults in default_providers.items():
-            loaded_providers.setdefault(p_name, p_defaults)
-            for sub_key, sub_default in p_defaults.items():
-                if isinstance(sub_default, dict):
-                    loaded_providers[p_name].setdefault(sub_key, {})
-                    for k, v in sub_default.items():
-                         loaded_providers[p_name][sub_key].setdefault(k, v)
-                else:
-                    loaded_providers[p_name].setdefault(sub_key, sub_default)
-        settings["api_providers"] = loaded_providers
-    
+            if key not in settings:
+                settings[key] = value
+
         settings.pop("api_keys", None)
         settings.pop("model_names", None)
-            
+
         return settings
     except (json.JSONDecodeError, Exception) as e:
         log_error(f"Failed to load settings.json: {e}. Using default settings.")

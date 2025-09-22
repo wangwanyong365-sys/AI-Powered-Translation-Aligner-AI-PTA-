@@ -21,6 +21,7 @@ class TranslationApp(tk.Tk):
         self.settings = load_settings()
         self.selected_files = []
         
+
         self.stop_requested = threading.Event()
         self.is_processing = False
         self.resume_data = None
@@ -59,7 +60,7 @@ class TranslationApp(tk.Tk):
                        foreground=[("active", "white")])
     
     def _setup_ui(self):
-        self.title("AI-Powered Translation Aligner (AI-PTA) v1.0.1")
+        self.title("AI-Powered Translation Aligner (AI-PTA) v1.0.2")
         self.geometry("1200x700")
         self.minsize(1000, 700)
         self.columnconfigure(0, weight=1)
@@ -193,17 +194,38 @@ class TranslationApp(tk.Tk):
             self.prompt_var.set(first_prompt_name)
             self._on_prompt_select()
         
-        self._update_api_provider_combo()
-        if self.settings.get('api_providers'):
-            first_provider = list(self.settings['api_providers'].keys())[0]
-            self.api_provider_var.set(first_provider)
-        self._on_provider_select()
+        self._refresh_api_settings_ui()
     
+    def _refresh_api_settings_ui(self):
+        current_provider = self.api_provider_var.get()
+        self._update_api_provider_combo()
+        
+        all_providers = list(self.settings.get('api_providers', {}).keys())
+        if current_provider in all_providers:
+            self.api_provider_var.set(current_provider)
+        elif all_providers:
+            self.api_provider_var.set(all_providers[0])
+        else:
+            self.api_provider_var.set("")
+        
+        self._on_provider_select()
+
     def _on_provider_select(self, event=None):
         provider_name = self.api_provider_var.get()
+        if not provider_name:
+            self.azure_settings_frame.grid_remove()
+            self.api_key_var.set("")
+            self.model_name_var.set("")
+            self._update_api_key_combo()
+            self._update_model_name_combo()
+            return
+            
         provider_config = self.settings["api_providers"].get(provider_name, {})
     
-        if "(Azure)" in provider_name:
+        is_azure_openai = "azure_endpoint" in provider_config and "api_version" in provider_config
+        is_azure_deepseek = "azure_endpoint" in provider_config and "api_version" not in provider_config and provider_name.endswith("(Azure)")
+
+        if is_azure_openai or is_azure_deepseek:
             self.azure_settings_frame.grid()
             self.azure_endpoint_var.set(provider_config.get("azure_endpoint", ""))
             
@@ -225,19 +247,20 @@ class TranslationApp(tk.Tk):
     
     def _save_azure_config(self):
         provider_name = self.api_provider_var.get()
-        if "(Azure)" not in provider_name:
+        provider_config = self.settings["api_providers"].get(provider_name)
+        if not provider_config or "azure_endpoint" not in provider_config:
             return
-    
+
         endpoint = self.azure_endpoint_var.get().strip()
         self.settings["api_providers"][provider_name]["azure_endpoint"] = endpoint
     
-        if self.api_version_entry.winfo_viewable():
+        if "api_version" in provider_config:
             version = self.api_version_var.get().strip()
             self.settings["api_providers"][provider_name]["api_version"] = version
         
         save_settings(self.settings)
         messagebox.showinfo("Success", "Azure configuration saved.")
-
+    
     def _get_current_api_key(self):
         displayed_text = self.api_key_var.get().strip()
         provider = self.api_provider_var.get()
@@ -369,7 +392,10 @@ class TranslationApp(tk.Tk):
     
         provider_config = self.settings['api_providers'][provider_name]
     
-        if provider_name == "OpenAI (Azure)":
+        is_azure_openai = "azure_endpoint" in provider_config and "api_version" in provider_config
+        is_azure_deepseek = "azure_endpoint" in provider_config and "api_version" not in provider_config and provider_name.endswith("(Azure)")
+
+        if is_azure_openai:
             azure_endpoint = provider_config.get('azure_endpoint')
             api_version = provider_config.get('api_version')
             if not azure_endpoint or not api_version:
@@ -379,7 +405,7 @@ class TranslationApp(tk.Tk):
                 azure_endpoint=azure_endpoint,
                 api_version=api_version,
             )
-        elif provider_name == "DeepSeek (Azure)":
+        elif is_azure_deepseek:
             azure_endpoint = provider_config.get('azure_endpoint')
             if not azure_endpoint:
                 raise ValueError("Azure Endpoint must be configured.")
@@ -416,7 +442,8 @@ class TranslationApp(tk.Tk):
             self.after(0, lambda: self.test_api_button.config(state=tk.NORMAL))
             
     def _update_api_provider_combo(self):
-        self.api_provider_combo['values'] = list(self.settings.get('api_providers', {}).keys())
+        providers = list(self.settings.get('api_providers', {}).keys())
+        self.api_provider_combo['values'] = sorted(providers)
     
     def _update_prompt_combo(self):
         self.prompt_combo['values'] = list(self.settings['prompts'].keys())
@@ -577,7 +604,7 @@ class TranslationApp(tk.Tk):
                     os.makedirs(output_dir, exist_ok=True)
                 else:
                     output_dir = os.path.dirname(file_path)
-
+    
                 self.after(0, self._update_status, f"[{i+1}/{total_files}] Reading: {file_name}", "orange")
     
                 with open(file_path, 'r', encoding='utf-8') as f: original_text = f.read()

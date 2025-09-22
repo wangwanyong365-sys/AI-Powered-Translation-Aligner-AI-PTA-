@@ -18,6 +18,7 @@ RESUME_PE_FILE = "resume_post_edit.json"
 class PostEditingWindow(tk.Toplevel):
     def __init__(self, parent):
         super().__init__(parent)
+        self.withdraw()
         self.parent = parent
         self.title("Post-editing Tool")
         self.geometry("700x600")
@@ -38,6 +39,7 @@ class PostEditingWindow(tk.Toplevel):
         self.transient(parent)
         self.grab_set()
         self.after(100, self._check_for_resume_task)
+        self.deiconify()
     
     def _on_closing(self):
         if self.is_processing:
@@ -280,7 +282,7 @@ class PostEditingWindow(tk.Toplevel):
                 file_name = os.path.basename(file_path)
                 
                 base_name = os.path.splitext(file_name)[0].replace('_corpus', '').replace('_translated','')
-
+    
                 if output_location == "Subfolder":
                     output_dir = os.path.join(os.path.dirname(file_path), base_name)
                     os.makedirs(output_dir, exist_ok=True)
