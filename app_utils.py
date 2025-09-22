@@ -34,7 +34,7 @@ def load_settings():
         "context_after": 1,
         "retry_attempts": 3,
         "paragraph_timeout": 300,
-        "request_interval": 5,
+        "request_interval": 0,
         "output_format": "Both",
         "output_location": "Subfolder",
         "api_providers": {
@@ -53,13 +53,13 @@ def load_settings():
                 "api_keys": {},
                 "model_names": ["gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"]
             },
-            "OpenAI (Azure)": {
+            "Azure (with API Version)": {
                 "azure_endpoint": "",
                 "api_version": "2024-12-01-preview",
                 "api_keys": {},
                 "model_names": []
             },
-            "DeepSeek (Azure)": {
+            "Azure (without API Version)": {
                 "azure_endpoint": "",
                 "api_keys": {},
                 "model_names": []
@@ -94,10 +94,10 @@ def load_settings():
         for key, value in default_settings.items():
             if key not in settings:
                 settings[key] = value
-
+    
         settings.pop("api_keys", None)
         settings.pop("model_names", None)
-
+    
         return settings
     except (json.JSONDecodeError, Exception) as e:
         log_error(f"Failed to load settings.json: {e}. Using default settings.")

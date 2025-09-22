@@ -60,7 +60,7 @@ class TranslationApp(tk.Tk):
                        foreground=[("active", "white")])
     
     def _setup_ui(self):
-        self.title("AI-Powered Translation Aligner (AI-PTA) v1.0.2")
+        self.title("AI-Powered Translation Aligner (AI-PTA) v1.0.3")
         self.geometry("1200x700")
         self.minsize(1000, 700)
         self.columnconfigure(0, weight=1)
@@ -209,7 +209,7 @@ class TranslationApp(tk.Tk):
             self.api_provider_var.set("")
         
         self._on_provider_select()
-
+    
     def _on_provider_select(self, event=None):
         provider_name = self.api_provider_var.get()
         if not provider_name:
@@ -222,10 +222,9 @@ class TranslationApp(tk.Tk):
             
         provider_config = self.settings["api_providers"].get(provider_name, {})
     
-        is_azure_openai = "azure_endpoint" in provider_config and "api_version" in provider_config
-        is_azure_deepseek = "azure_endpoint" in provider_config and "api_version" not in provider_config and provider_name.endswith("(Azure)")
-
-        if is_azure_openai or is_azure_deepseek:
+        is_azure_provider = "azure_endpoint" in provider_config
+    
+        if is_azure_provider:
             self.azure_settings_frame.grid()
             self.azure_endpoint_var.set(provider_config.get("azure_endpoint", ""))
             
@@ -250,7 +249,7 @@ class TranslationApp(tk.Tk):
         provider_config = self.settings["api_providers"].get(provider_name)
         if not provider_config or "azure_endpoint" not in provider_config:
             return
-
+    
         endpoint = self.azure_endpoint_var.get().strip()
         self.settings["api_providers"][provider_name]["azure_endpoint"] = endpoint
     
@@ -392,27 +391,25 @@ class TranslationApp(tk.Tk):
     
         provider_config = self.settings['api_providers'][provider_name]
     
-        is_azure_openai = "azure_endpoint" in provider_config and "api_version" in provider_config
-        is_azure_deepseek = "azure_endpoint" in provider_config and "api_version" not in provider_config and provider_name.endswith("(Azure)")
-
-        if is_azure_openai:
-            azure_endpoint = provider_config.get('azure_endpoint')
-            api_version = provider_config.get('api_version')
-            if not azure_endpoint or not api_version:
-                raise ValueError("Azure Endpoint and API Version must be configured.")
-            return openai.AzureOpenAI(
-                api_key=api_key,
-                azure_endpoint=azure_endpoint,
-                api_version=api_version,
-            )
-        elif is_azure_deepseek:
+        if "azure_endpoint" in provider_config:
             azure_endpoint = provider_config.get('azure_endpoint')
             if not azure_endpoint:
                 raise ValueError("Azure Endpoint must be configured.")
-            return openai.OpenAI(
-                api_key=api_key, 
-                base_url=azure_endpoint
-            )
+
+            if "api_version" in provider_config:
+                api_version = provider_config.get('api_version')
+                if not api_version:
+                    raise ValueError("API Version must be configured for this provider type.")
+                return openai.AzureOpenAI(
+                    api_key=api_key,
+                    azure_endpoint=azure_endpoint,
+                    api_version=api_version,
+                )
+            else:
+                return openai.OpenAI(
+                    api_key=api_key,
+                    base_url=azure_endpoint
+                )
         else:
             base_url = provider_config.get('base_url')
             if not base_url:
@@ -580,7 +577,7 @@ class TranslationApp(tk.Tk):
             max_tokens_value = self.settings.get('max_tokens', 8000)
             retry_attempts_value = self.settings.get('retry_attempts', 3)
             paragraph_timeout_value = self.settings.get('paragraph_timeout', 300)
-            request_interval_value = self.settings.get('request_interval', 5)
+            request_interval_value = self.settings.get('request_interval', 0)
             output_format = self.settings.get('output_format', 'Both')
             output_location = self.settings.get('output_location', 'Subfolder')
     
