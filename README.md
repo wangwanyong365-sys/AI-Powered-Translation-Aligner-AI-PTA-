@@ -1,4 +1,4 @@
-# AI-Powered Translation Aligner (AI-PTA) v1.0.2
+# AI-Powered Translation Aligner (AI-PTA) v1.0.3
 
 A comprehensive desktop application for AI-assisted translation and text processing with advanced post-editing capabilities.
 
@@ -9,11 +9,11 @@ The AI-Powered Translation Aligner program has been **officially released** star
 
 If you want to use this software, please adjust the **settings** first. This is very important!
 
-<img width="1802" height="1128" alt="image" src="https://github.com/user-attachments/assets/69dd4a37-c951-4d44-929d-6d95858e7251" />
+<img width="1802" height="1128" alt="image" src="https://github.com/user-attachments/assets/a73dda60-2a37-4cdc-ae03-f786fbb341eb" />
 
 ## New Features in v0.18
 
-<img width="518" height="420" alt="image" src="https://github.com/user-attachments/assets/29cbfab4-d3a1-4771-9c8c-dc2ac99dcfe3" />
+<img width="578" height="561" alt="image" src="https://github.com/user-attachments/assets/558354c4-890c-4c03-b478-dd3ab5ad1f0c" />
 
 Fixed some known bugs in the API Provider ribbon and added the ability to call the DeepSeek model from Microsoft Azure.
 
