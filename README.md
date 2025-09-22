@@ -1,8 +1,11 @@
-# AI-Powered Translation Aligner (AI-PTA) v0.18
+# AI-Powered Translation Aligner (AI-PTA) v1.0.1
 
 A comprehensive desktop application for AI-assisted translation and text processing with advanced post-editing capabilities.
 
-**Note**: The AI-Powered Translation Aligner program has been **officially released** starting from version **0.18**. 
+**Note**: 
+The **official version** of the AI-Powered Translation Aligner has been updated from version **1.0.1**. This means the program will no longer undergo frequent testing and updates. Instead, the official version will be more stable and provide users with greater flexibility to customize settings.
+
+The AI-Powered Translation Aligner program has been **officially released** starting from version **0.18**. 
 
 This means you can directly click to use it on a Windows computer **without** installing Python.
 
