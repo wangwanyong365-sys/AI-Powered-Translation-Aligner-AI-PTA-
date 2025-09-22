@@ -11,7 +11,7 @@ If you want to use this software, please adjust the **settings** first. This is 
 
 <img width="1802" height="1128" alt="image" src="https://github.com/user-attachments/assets/a73dda60-2a37-4cdc-ae03-f786fbb341eb" />
 
-## New Features in v0.18
+## New Features
 
 <img width="578" height="561" alt="image" src="https://github.com/user-attachments/assets/558354c4-890c-4c03-b478-dd3ab5ad1f0c" />
 
