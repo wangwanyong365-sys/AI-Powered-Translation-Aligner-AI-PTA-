@@ -35,6 +35,8 @@ def load_settings():
         "retry_attempts": 3,
         "paragraph_timeout": 300,
         "request_interval": 5,
+        "output_format": "Both",
+        "output_location": "Subfolder",
         "api_providers": {
             "DeepSeek": {
                 "base_url": "https://api.deepseek.com",

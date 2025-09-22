@@ -3,7 +3,7 @@ import json
 import time
 import threading
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox, simpledialog, scrolledtext
+from tkinter import ttk, filedialog, messagebox, simpledialog
 
 import openai
 import pandas as pd
@@ -11,7 +11,7 @@ from openpyxl import load_workbook
 from openpyxl.styles import Font
 
 from app_utils import load_settings, save_settings, log_error, split_text_into_paragraphs, translate_single_paragraph, test_api_connection
-from ui_tools import TermAnnotatorApp, PostEditingWindow
+from menu_bar import AppMenuBar
 
 RESUME_FILE = "resume_info.json"
 
@@ -20,10 +20,7 @@ class TranslationApp(tk.Tk):
         super().__init__()
         self.settings = load_settings()
         self.selected_files = []
-        self.annotator_window = None
-        self.post_editor_window = None
         
-
         self.stop_requested = threading.Event()
         self.is_processing = False
         self.resume_data = None
@@ -62,28 +59,14 @@ class TranslationApp(tk.Tk):
                        foreground=[("active", "white")])
     
     def _setup_ui(self):
-        self.title("AI-Powered Translation Aligner (AI-PTA) v0.18")
+        self.title("AI-Powered Translation Aligner (AI-PTA) v1.0.1")
         self.geometry("1200x700")
         self.minsize(1000, 700)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
     
-        self.menu_bar = tk.Menu(self)
+        self.menu_bar = AppMenuBar(self)
         self.config(menu=self.menu_bar)
-    
-        settings_menu = tk.Menu(self.menu_bar, tearoff=0)
-        self.menu_bar.add_cascade(label="Settings", menu=settings_menu)
-        settings_menu.add_command(label="Translation Options...", command=self._open_translation_settings)
-        
-        tools_menu = tk.Menu(self.menu_bar, tearoff=0)
-        self.menu_bar.add_cascade(label="Tools", menu=tools_menu)
-        tools_menu.add_command(label="Term Annotator", command=self._open_annotator)
-        tools_menu.add_command(label="Post-editing", command=self._open_post_editor)
-    
-        help_menu = tk.Menu(self.menu_bar, tearoff=0)
-        self.menu_bar.add_cascade(label="Help", menu=help_menu)
-        help_menu.add_command(label="About", command=self._show_about_info)
-        help_menu.add_command(label="View License", command=self._show_license_info)
     
         main_frame = ttk.Frame(self, padding="15")
         main_frame.grid(row=0, column=0, sticky="nsew")
@@ -202,81 +185,7 @@ class TranslationApp(tk.Tk):
         self.timer_label = ttk.Label(status_bar, text="", relief=tk.SUNKEN, anchor=tk.E, padding=5)
         self.timer_label.pack(side=tk.RIGHT)
         self._update_status("Ready", "gray")
-    
-    def _open_translation_settings(self):
-        dialog = tk.Toplevel(self)
-        dialog.transient(self)
-        dialog.title("Translation Options")
-        dialog.grab_set()
-        dialog.resizable(False, False)
-    
-        content_frame = ttk.Frame(dialog, padding="15")
-        content_frame.pack(expand=True, fill="both")
-    
-        max_tokens = tk.IntVar(value=self.settings.get("max_tokens", 8000))
-        context_before = tk.IntVar(value=self.settings.get("context_before", 1))
-        context_after = tk.IntVar(value=self.settings.get("context_after", 1))
-        retry_attempts = tk.IntVar(value=self.settings.get("retry_attempts", 3))
-        paragraph_timeout = tk.IntVar(value=self.settings.get("paragraph_timeout", 300))
-        request_interval = tk.IntVar(value=self.settings.get("request_interval", 5))
-    
-        ttk.Label(content_frame, text="Max Tokens:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
-        ttk.Entry(content_frame, textvariable=max_tokens, width=15).grid(row=0, column=1, sticky="w", padx=5, pady=5)
         
-        ttk.Label(content_frame, text="Previous Paragraphs (Context):").grid(row=1, column=0, sticky="w", padx=5, pady=5)
-        ttk.Entry(content_frame, textvariable=context_before, width=15).grid(row=1, column=1, sticky="w", padx=5, pady=5)
-        
-        ttk.Label(content_frame, text="Next Paragraphs (Context):").grid(row=2, column=0, sticky="w", padx=5, pady=5)
-        ttk.Entry(content_frame, textvariable=context_after, width=15).grid(row=2, column=1, sticky="w", padx=5, pady=5)
-        
-        ttk.Label(content_frame, text="Retry Attempts on Failure:").grid(row=3, column=0, sticky="w", padx=5, pady=5)
-        ttk.Entry(content_frame, textvariable=retry_attempts, width=15).grid(row=3, column=1, sticky="w", padx=5, pady=5)
-    
-        ttk.Label(content_frame, text="Retry on Timeout (seconds):").grid(row=4, column=0, sticky="w", padx=5, pady=5)
-        ttk.Entry(content_frame, textvariable=paragraph_timeout, width=15).grid(row=4, column=1, sticky="w", padx=5, pady=5)
-        
-        ttk.Label(content_frame, text="Request Interval (seconds):").grid(row=5, column=0, sticky="w", padx=5, pady=5)
-        ttk.Entry(content_frame, textvariable=request_interval, width=15).grid(row=5, column=1, sticky="w", padx=5, pady=5)
-    
-        def save_and_close():
-            try:
-                new_interval = request_interval.get()
-                if new_interval < 0:
-                    messagebox.showerror("Invalid Input", "Request interval cannot be negative.", parent=dialog)
-                    return
-                
-                self.settings['max_tokens'] = max_tokens.get()
-                self.settings['context_before'] = context_before.get()
-                self.settings['context_after'] = context_after.get()
-                self.settings['retry_attempts'] = retry_attempts.get()
-                self.settings['paragraph_timeout'] = paragraph_timeout.get()
-                self.settings['request_interval'] = new_interval
-                save_settings(self.settings)
-                messagebox.showinfo("Success", "Settings saved.", parent=dialog)
-                dialog.destroy()
-            except tk.TclError:
-                messagebox.showerror("Invalid Input", "Please ensure all values are valid integers.", parent=dialog)
-    
-        button_frame = ttk.Frame(dialog, padding="10")
-        button_frame.pack(fill="x")
-        ttk.Button(button_frame, text="Save", command=save_and_close).pack(side="right", padx=5)
-        ttk.Button(button_frame, text="Cancel", command=dialog.destroy).pack(side="right")
-    
-    def _open_annotator(self):
-        if self.annotator_window and self.annotator_window.winfo_exists():
-            self.annotator_window.lift()
-            self.annotator_window.focus_force()
-            return
-        self.annotator_window = tk.Toplevel(self)
-        app = TermAnnotatorApp(self.annotator_window)
-    
-    def _open_post_editor(self):
-        if self.post_editor_window and self.post_editor_window.winfo_exists():
-            self.post_editor_window.lift()
-            self.post_editor_window.focus_force()
-            return
-        self.post_editor_window = PostEditingWindow(self)
-    
     def _post_ui_setup(self):
         self._update_prompt_combo()
         if self.settings['prompts']:
@@ -328,48 +237,6 @@ class TranslationApp(tk.Tk):
         
         save_settings(self.settings)
         messagebox.showinfo("Success", "Azure configuration saved.")
-    
-    def _show_about_info(self):
-        messagebox.showinfo(
-            "About",
-            "Wanyong Wang\n"
-            "Email: wangwanyong365@hotmail.com\n\n"
-            "Dechao Li\n"
-            "Email: ctdechao@polyu.edu.hk\n\n"
-            "Department of Language Science and Technology (LST)\n"            
-            "The Hong Kong Polytechnic University\n"
-            "Kowloon, Hong Kong, China\n"
-        )
-    
-    def _show_license_info(self):
-        license_window = tk.Toplevel(self)
-        license_window.title("MIT License")
-        license_window.geometry("600x500")
-        text_area = scrolledtext.ScrolledText(license_window, wrap=tk.WORD, font=("Segoe UI", 10))
-        text_area.pack(expand=True, fill="both", padx=10, pady=10)
-        mit_license_text = """MIT License
-
-Copyright (c) 2025 Wanyong Wang
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE."""
-        text_area.insert(tk.INSERT, mit_license_text)
-        text_area.config(state=tk.DISABLED)
 
     def _get_current_api_key(self):
         displayed_text = self.api_key_var.get().strip()
@@ -687,6 +554,8 @@ SOFTWARE."""
             retry_attempts_value = self.settings.get('retry_attempts', 3)
             paragraph_timeout_value = self.settings.get('paragraph_timeout', 300)
             request_interval_value = self.settings.get('request_interval', 5)
+            output_format = self.settings.get('output_format', 'Both')
+            output_location = self.settings.get('output_location', 'Subfolder')
     
             client = self._create_client()
     
@@ -701,10 +570,14 @@ SOFTWARE."""
             for i in range(start_file_index, total_files):
                 file_path = self.selected_files[i]
                 file_name = os.path.basename(file_path)
-                dir_name = os.path.splitext(file_name)[0]
-                output_dir = os.path.join(os.path.dirname(file_path), dir_name)
-                os.makedirs(output_dir, exist_ok=True)
+                dir_name_base = os.path.splitext(file_name)[0]
                 
+                if output_location == "Subfolder":
+                    output_dir = os.path.join(os.path.dirname(file_path), dir_name_base)
+                    os.makedirs(output_dir, exist_ok=True)
+                else:
+                    output_dir = os.path.dirname(file_path)
+
                 self.after(0, self._update_status, f"[{i+1}/{total_files}] Reading: {file_name}", "orange")
     
                 with open(file_path, 'r', encoding='utf-8') as f: original_text = f.read()
@@ -747,42 +620,44 @@ SOFTWARE."""
                     
                     self.after(0, self._cancel_timer)
                     translated_paragraphs.append(translated_para)
-
+    
                     if request_interval_value > 0 and j < total_paragraphs - 1:
                         time.sleep(request_interval_value)
     
-                full_translated_text = "\n\n".join(translated_paragraphs)
-                translated_file_path = os.path.join(output_dir, f"{dir_name}_translated.txt")
-                with open(translated_file_path, 'w', encoding='utf-8') as f: f.write(full_translated_text)
+                if output_format in ["Text", "Both"]:
+                    full_translated_text = "\n\n".join(translated_paragraphs)
+                    translated_file_path = os.path.join(output_dir, f"{dir_name_base}_translated.txt")
+                    with open(translated_file_path, 'w', encoding='utf-8') as f: f.write(full_translated_text)
     
-                self.after(0, self._update_status, f"[{i+1}/{total_files}] Generating Excel file...", "orange")
-                df = pd.DataFrame({'Source': paragraphs, 'Translation': translated_paragraphs})
-                excel_path = os.path.join(output_dir, f"{dir_name}_corpus.xlsx")
-                df.to_excel(excel_path, index=False, engine='openpyxl')
-                
-                red_bold_font = Font(color="FF0000", bold=True)
-                wb = load_workbook(excel_path)
-                ws = wb.active
-                for row in ws.iter_rows(min_row=2, max_col=ws.max_column, max_row=ws.max_row):
-                    cell = row[1]
-                    if not isinstance(cell.value, str): continue
-                    if cell.value == "[ERROR_CONTENT_FILTER]":
-                        cell.value = "Rejected by API (content policy)"
-                        cell.font = red_bold_font
-                    elif cell.value == "[ERROR_NETWORK]":
-                        cell.value = "Network Issue"
-                        cell.font = red_bold_font
-                    elif cell.value.startswith("[ERROR_OTHER:"):
-                        cell.value = f"Failed: {cell.value[13:-3]}"
-                        cell.font = red_bold_font
-                wb.save(excel_path)
+                if output_format in ["Excel", "Both"]:
+                    self.after(0, self._update_status, f"[{i+1}/{total_files}] Generating Excel file...", "orange")
+                    df = pd.DataFrame({'Source': paragraphs, 'Translation': translated_paragraphs})
+                    excel_path = os.path.join(output_dir, f"{dir_name_base}_corpus.xlsx")
+                    df.to_excel(excel_path, index=False, engine='openpyxl')
+                    
+                    red_bold_font = Font(color="FF0000", bold=True)
+                    wb = load_workbook(excel_path)
+                    ws = wb.active
+                    for row in ws.iter_rows(min_row=2, max_col=ws.max_column, max_row=ws.max_row):
+                        cell = row[1]
+                        if not isinstance(cell.value, str): continue
+                        if cell.value == "[ERROR_CONTENT_FILTER]":
+                            cell.value = "Rejected by API (content policy)"
+                            cell.font = red_bold_font
+                        elif cell.value == "[ERROR_NETWORK]":
+                            cell.value = "Network Issue"
+                            cell.font = red_bold_font
+                        elif cell.value.startswith("[ERROR_OTHER:"):
+                            cell.value = f"Failed: {cell.value[13:-3]}"
+                            cell.font = red_bold_font
+                    wb.save(excel_path)
     
             if os.path.exists(RESUME_FILE):
                 os.remove(RESUME_FILE)
     
             save_settings(self.settings)
     
-            self.after(0, self._update_status, "Processing complete! All files have been saved in their respective folders.", "green")
+            self.after(0, self._update_status, "Processing complete! All files have been saved.", "green")
     
         except Exception as e:
             error_message = f"Processing failed: {e}"
