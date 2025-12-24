@@ -9,7 +9,7 @@ The AI-Powered Translation Aligner program has been **officially released** star
 
 If you want to use this software, please adjust the **settings** first. This is very important!
 
-<img width="1824" height="1258" alt="image" src="https://github.com/user-attachments/assets/766a6d3d-c63a-4926-84a7-057281f5f9b0" />
+<img width="1824" height="1258" alt="image" src="https://github.com/user-attachments/assets/35c9b25d-d5d2-4a71-89eb-3ff5773f13bc" />
 
 ## New Features
 
