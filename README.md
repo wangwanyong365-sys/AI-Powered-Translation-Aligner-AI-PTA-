@@ -13,7 +13,7 @@ If you want to use this software, please adjust the **settings** first. This is 
 
 ## New Features
 
-<img width="578" height="561" alt="image" src="https://github.com/user-attachments/assets/558354c4-890c-4c03-b478-dd3ab5ad1f0c" />
+<img width="627" height="571" alt="image" src="https://github.com/user-attachments/assets/38fc88bc-5734-4b5b-9efb-5fbbeb1e4949" />
 
 Fixed some known bugs in the API Provider ribbon and added the ability to call the DeepSeek model from Microsoft Azure.
 
@@ -25,7 +25,7 @@ Fixed some known bugs in the API Provider ribbon and added the ability to call t
 - **Flexible Placeholders**: Use {source} and {target} placeholders for targeted editing instructions
 - **Resume Capability**: Automatic task resumption with progress tracking
 
-<img width="1052" height="948" alt="image" src="https://github.com/user-attachments/assets/dd660c3d-9f3a-4eb6-96e8-dd78cd8f929c" />
+<img width="1074" height="958" alt="image" src="https://github.com/user-attachments/assets/4f3d0515-ee7a-4310-87f0-0f42d512c724" />
 
 ### API Connection Testing
 - **Built-in API Testing**: Test API connections directly from the main interface
@@ -47,7 +47,7 @@ Fixed some known bugs in the API Provider ribbon and added the ability to call t
 - **CSV Terminology Support**: Import/export terminology lists in CSV format
 - **Term Highlighting**: Visual source text highlighting with target term annotations
 
-<img width="1502" height="1098" alt="image" src="https://github.com/user-attachments/assets/66c47f56-a757-4bba-9e51-5a19b1b5ab3d" />
+<img width="1524" height="1108" alt="image" src="https://github.com/user-attachments/assets/57ef813f-816d-4be8-a5df-1746394734f5" />
 
 ## Core Features
 
